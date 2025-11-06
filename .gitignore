@@ -1,23 +1,22 @@
-# Binaries for programs and plugins
+.idea
+.vscode
+
 *.exe
 *.exe~
 *.dll
 *.so
 *.dylib
+*.log
+.bin
+.env
 
-# Test binary, built with `go test -c`
+.DS_Store
+
 *.test
 
-# Output of the go coverage tool, specifically when used with LiteIDE
 *.out
 
-# Binaries
-cmd/shortener/main
-cmd/shortener/shortener
-
-# Dependency directories (remove the comment below to include it)
 vendor/
+api/
 
-# IDEs directories
-.idea
-.vscode
+cmd/test/*.go
