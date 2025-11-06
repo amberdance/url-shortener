@@ -3,25 +3,38 @@ package config
 import (
 	"flag"
 	"fmt"
+	"sync"
 )
 
+// Config @TODO: env
 type Config struct {
-	Address string
-	BaseURL string
+	Address  string
+	BaseURL  string
+	LogLevel string
 }
 
+var (
+	cfg  *Config
+	once sync.Once
+)
+
 func NewConfig() *Config {
-	address := flag.String("a", "localhost:8080", "Адрес запуска HTTP-сервера (:8080)")
-	baseURL := flag.String("b", "http://localhost:8080", "Полный адрес сервера (http://localhost:8080)")
+	once.Do(func() {
+		address := flag.String("a", "localhost:8080", "Адрес запуска HTTP-сервера (например, localhost:8080)")
+		baseURL := flag.String("b", "", "Базовый адрес для коротких ссылок (например, http://localhost:8080)")
 
-	flag.Parse()
+		flag.Parse()
 
-	if *baseURL == "" {
-		*baseURL = fmt.Sprintf("http://%s/", *address)
-	}
+		if *baseURL == "" {
+			*baseURL = fmt.Sprintf("http://%s/", *address)
+		}
 
-	return &Config{
-		Address: *address,
-		BaseURL: *baseURL,
-	}
+		cfg = &Config{
+			Address:  *address,
+			BaseURL:  *baseURL,
+			LogLevel: "info",
+		}
+	})
+
+	return cfg
 }

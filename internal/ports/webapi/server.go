@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log"
 	"net/http"
 	"os"
 	"os/signal"
@@ -12,6 +11,7 @@ import (
 	"time"
 
 	"github.com/amberdance/url-shortener/internal/app"
+	"github.com/amberdance/url-shortener/internal/domain/shared"
 	"github.com/amberdance/url-shortener/internal/ports/webapi/handlers"
 	webmw "github.com/amberdance/url-shortener/internal/ports/webapi/middleware"
 
@@ -22,6 +22,7 @@ import (
 
 type Server struct {
 	httpServer *http.Server
+	logger     shared.Logger
 }
 
 func NewServer(a *app.App) *Server {
@@ -32,11 +33,12 @@ func NewServer(a *app.App) *Server {
 		Handler: handler,
 	}
 
-	return &Server{httpServer: httpSrv}
+	return &Server{httpServer: httpSrv, logger: a.Logger()}
 }
 
 func (s *Server) Run(ctx context.Context) error {
-	log.Printf("Server is running on %s\n", s.httpServer.Addr)
+	l := s.logger
+	l.Info(fmt.Sprintf("Server is running on %s", s.httpServer.Addr))
 
 	idleConnsClosed := make(chan struct{})
 
@@ -46,31 +48,30 @@ func (s *Server) Run(ctx context.Context) error {
 
 		select {
 		case <-quit:
-			log.Println("Shutdown signal received")
+			l.Info("Shutdown signal received")
 		case <-ctx.Done():
-			log.Println("Context cancelled, shutting down")
+			l.Info("Context cancelled, shutting down")
 		}
 
 		shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
 
 		if err := s.httpServer.Shutdown(shutdownCtx); err != nil {
-			log.Printf("HTTP server shutdown: %v", err)
+			l.Error("HTTP server shutdown: %v", err)
 		}
 		close(idleConnsClosed)
 	}()
 
 	if err := s.httpServer.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
-		return fmt.Errorf("listen and serve: %w", err)
+		return err
 	}
-
 	<-idleConnsClosed
-	log.Println("Server stopped gracefully")
+	l.Info("Server stopped gracefully")
 	return nil
 }
 
 func (s *Server) Stop(ctx context.Context) error {
-	log.Println("Stopping server manually")
+	s.logger.Info("Stopping server manually")
 	return s.httpServer.Shutdown(ctx)
 }
 
