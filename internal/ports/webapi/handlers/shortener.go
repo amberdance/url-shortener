@@ -10,26 +10,26 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
-type UrlShortenerHandler struct {
+type URLShortenerHandler struct {
 	host    string
 	storage storage.Storage
 }
 
-func NewUrlShortenerHandler(st storage.Storage, host string) *UrlShortenerHandler {
-	return &UrlShortenerHandler{
+func NewURLShortenerHandler(st storage.Storage, host string) *URLShortenerHandler {
+	return &URLShortenerHandler{
 		storage: st,
 		host:    strings.TrimRight(host, "/") + "/",
 	}
 }
 
-func (h *UrlShortenerHandler) Routes() chi.Router {
+func (h *URLShortenerHandler) Routes() chi.Router {
 	r := chi.NewRouter()
 	r.Post("/", h.post)
 	r.Get("/{id:[a-zA-Z0-9]+}", h.get)
 	return r
 }
 
-func (h *UrlShortenerHandler) post(w http.ResponseWriter, r *http.Request) {
+func (h *URLShortenerHandler) post(w http.ResponseWriter, r *http.Request) {
 	body, err := io.ReadAll(r.Body)
 	defer r.Body.Close()
 	if err != nil || len(body) == 0 {
@@ -54,7 +54,7 @@ func (h *UrlShortenerHandler) post(w http.ResponseWriter, r *http.Request) {
 	_, _ = w.Write([]byte(shortURL))
 }
 
-func (h *UrlShortenerHandler) get(w http.ResponseWriter, r *http.Request) {
+func (h *URLShortenerHandler) get(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 
 	if id == "" {

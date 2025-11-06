@@ -11,9 +11,9 @@ import (
 	"github.com/amberdance/url-shortener/internal/infrastructure/storage"
 )
 
-func setupTest() *UrlShortenerHandler {
+func setupTest() *URLShortenerHandler {
 	st := storage.NewInMemoryStorage()
-	return NewUrlShortenerHandler(st, "http://localhost:8080/")
+	return NewURLShortenerHandler(st, "http://localhost:8080/")
 }
 
 func TestPost_Success(t *testing.T) {
