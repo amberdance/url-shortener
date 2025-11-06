@@ -1,6 +1,9 @@
 package storage
 
-import "sync"
+import (
+	"context"
+	"sync"
+)
 
 type InMemoryStorage struct {
 	data map[string]string
@@ -13,16 +16,16 @@ func NewInMemoryStorage() *InMemoryStorage {
 	}
 }
 
-func (s *InMemoryStorage) Save(shortID, originalURL string) error {
+func (s *InMemoryStorage) Save(_ context.Context, id, originalURL string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	s.data[shortID] = originalURL
+	s.data[id] = originalURL
 	return nil
 }
 
-func (s *InMemoryStorage) Get(shortID string) (string, bool) {
+func (s *InMemoryStorage) Get(_ context.Context, id string) (string, bool) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
-	url, ok := s.data[shortID]
+	url, ok := s.data[id]
 	return url, ok
 }

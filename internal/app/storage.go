@@ -1,6 +1,8 @@
 package app
 
+import "context"
+
 type Storage interface {
-	Save(shortID, url string) error
-	Get(shortID string) (string, bool)
+	Save(ctx context.Context, id, url string) error
+	Get(ctx context.Context, id string) (string, bool)
 }

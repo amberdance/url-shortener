@@ -69,7 +69,7 @@ func TestGet_Success(t *testing.T) {
 	h := setupTest()
 	router := h.Routes()
 
-	_ = h.storage.Save("abc123", "https://hard2code.ru")
+	_ = h.storage.Save(t.Context(), "abc123", "https://hard2code.ru")
 
 	req := httptest.NewRequest(http.MethodGet, "/abc123", nil)
 	w := httptest.NewRecorder()
@@ -82,7 +82,7 @@ func TestGet_Success(t *testing.T) {
 		t.Fatalf("expected 307, got %d", res.StatusCode)
 	}
 
-	if res.Header.Get("Location") != "https://yandex.ru" {
+	if res.Header.Get("Location") != "https://hard2code.ru" {
 		t.Errorf("expected redirect to https://yandex.ru, got %s", res.Header.Get("Location"))
 	}
 }

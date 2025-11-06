@@ -44,14 +44,14 @@ func (h *URLShortenerHandler) post(w http.ResponseWriter, r *http.Request) {
 	}
 
 	id := helpers.GenerateShortID()
-	if err := h.storage.Save(id, originalURL); err != nil {
+	if err := h.storage.Save(r.Context(), id, originalURL); err != nil {
 		http.Error(w, "Failed to save URL", http.StatusInternalServerError)
 		return
 	}
 
 	shortURL := h.host + id
 	w.WriteHeader(http.StatusCreated)
-	_, _ = w.Write([]byte(shortURL))
+	w.Write([]byte(shortURL))
 }
 
 func (h *URLShortenerHandler) get(w http.ResponseWriter, r *http.Request) {
@@ -62,7 +62,7 @@ func (h *URLShortenerHandler) get(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	originalURL, ok := h.storage.Get(id)
+	originalURL, ok := h.storage.Get(r.Context(), id)
 	if !ok {
 		http.Error(w, "Bad request", http.StatusBadRequest)
 		return
