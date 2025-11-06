@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/amberdance/url-shortener/internal/app"
+	"github.com/amberdance/url-shortener/internal/app/service"
 	"github.com/amberdance/url-shortener/internal/domain/shared"
 	"github.com/amberdance/url-shortener/internal/ports/webapi/handlers"
 	webmw "github.com/amberdance/url-shortener/internal/ports/webapi/middleware"
@@ -85,7 +86,7 @@ func buildRoutes(a *app.App) *chi.Mux {
 
 	router.Group(func(r chi.Router) {
 		r.Use(webmw.TextPlainHeaderMiddleware)
-		r.Mount("/", handlers.NewURLShortenerHandler(a.Storage(), a.Config().BaseURL).Routes())
+		r.Mount("/", handlers.NewURLShortenerHandler(service.NewURLShortenerService(a.Storage()), a.Config().BaseURL).Routes())
 	})
 
 	//router.NotFound(func(w http.ResponseWriter, r *http.Request) {

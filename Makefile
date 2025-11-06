@@ -6,11 +6,6 @@ host ?=
 
 test:
 	go test $(TEST_PATH) $(TEST_FLAGS)
-	@echo ""
-	@echo "===================="
-	@echo "Code coverage report"
-	@echo "===================="
-	go tool cover -func=coverage.out | tail -n 10
 
 build:
 	go build -o .bin/server cmd/shortener/main.go

@@ -8,12 +8,15 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/amberdance/url-shortener/internal/app/service"
 	"github.com/amberdance/url-shortener/internal/infrastructure/storage"
 )
 
 func setupTest() *URLShortenerHandler {
-	st := storage.NewInMemoryStorage()
-	return NewURLShortenerHandler(st, "http://localhost:8080/")
+	return NewURLShortenerHandler(
+		service.NewURLShortenerService(storage.NewInMemoryStorage()),
+		"http://localhost:8080/",
+	)
 }
 
 func TestPost_Success(t *testing.T) {
@@ -69,9 +72,8 @@ func TestGet_Success(t *testing.T) {
 	h := setupTest()
 	router := h.Routes()
 
-	_ = h.storage.Save(t.Context(), "abc123", "https://hard2code.ru")
-
-	req := httptest.NewRequest(http.MethodGet, "/abc123", nil)
+	id, _ := h.service.CreateShortURL(t.Context(), "https://hard2code.ru")
+	req := httptest.NewRequest(http.MethodGet, "/"+id, nil)
 	w := httptest.NewRecorder()
 	router.ServeHTTP(w, req)
 
@@ -83,7 +85,7 @@ func TestGet_Success(t *testing.T) {
 	}
 
 	if res.Header.Get("Location") != "https://hard2code.ru" {
-		t.Errorf("expected redirect to https://yandex.ru, got %s", res.Header.Get("Location"))
+		t.Errorf("expected redirect to https://hard2code.ru, got %s", res.Header.Get("Location"))
 	}
 }
 
@@ -97,7 +99,7 @@ func TestGet_NotFound(t *testing.T) {
 	res := w.Result()
 	defer res.Body.Close()
 
-	if res.StatusCode != http.StatusBadRequest {
-		t.Errorf("expected 400, got %d", res.StatusCode)
+	if res.StatusCode != http.StatusNotFound {
+		t.Errorf("expected 404, got %d", res.StatusCode)
 	}
 }
