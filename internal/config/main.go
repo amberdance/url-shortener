@@ -3,10 +3,10 @@ package config
 import (
 	"flag"
 	"fmt"
+	"strings"
 	"sync"
 )
 
-// Config @TODO: env
 type Config struct {
 	Address  string
 	BaseURL  string
@@ -21,20 +21,21 @@ var (
 func NewConfig() *Config {
 	once.Do(func() {
 		address := flag.String("a", "localhost:8080", "Адрес запуска HTTP-сервера (например, localhost:8080)")
-		baseURL := flag.String("b", "http://localhost:8080", "Базовый адрес для коротких ссылок (например, http://localhost:8080)")
-
+		baseURL := flag.String("b", "", "Базовый адрес для HTTP-сервера ссылок (например, http://localhost:8080)")
 		flag.Parse()
 
-		if *baseURL == "" {
-			*baseURL = fmt.Sprintf("http://%s/", *address)
+		url := *baseURL
+		if url == "" {
+			url = fmt.Sprintf("http://%s", *address)
 		}
+
+		url = strings.TrimRight(url, "/")
 
 		cfg = &Config{
 			Address:  *address,
-			BaseURL:  *baseURL,
+			BaseURL:  url,
 			LogLevel: "info",
 		}
 	})
-
 	return cfg
 }

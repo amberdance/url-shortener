@@ -15,10 +15,6 @@ type URLShortenerHandler struct {
 }
 
 func NewURLShortenerHandler(srv *service.URLShortenerService, host string) *URLShortenerHandler {
-	if !strings.HasPrefix(host, "http://") && !strings.HasPrefix(host, "https://") {
-		host = "http://" + host
-	}
-
 	return &URLShortenerHandler{
 		service: srv,
 		host:    strings.TrimRight(host, "/") + "/",
