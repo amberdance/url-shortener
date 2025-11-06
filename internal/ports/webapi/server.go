@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -25,7 +26,7 @@ type Server struct {
 }
 
 func NewServer(addr string, st storage.Storage) *Server {
-	host := fmt.Sprintf("http://localhost%s/", addr)
+	host := fmt.Sprintf("http://localhost:%s/", strings.TrimPrefix(addr, ":"))
 	router := buildRoutes(st, host)
 	handler := cors.AllowAll().Handler(router)
 

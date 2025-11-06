@@ -56,6 +56,7 @@ func (h *UrlShortenerHandler) post(w http.ResponseWriter, r *http.Request) {
 
 func (h *UrlShortenerHandler) get(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
+
 	if id == "" {
 		http.Error(w, "Bad request", http.StatusBadRequest)
 		return
