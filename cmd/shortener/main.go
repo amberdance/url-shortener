@@ -1,15 +1,18 @@
 package main
 
 import (
+	"context"
 	"log"
 
+	"github.com/amberdance/url-shortener/internal/infrastructure/storage"
 	"github.com/amberdance/url-shortener/internal/ports/webapi"
 )
 
 func main() {
-	server := webapi.NewServer(":8080")
+	st := storage.NewInMemoryStorage()
+	srv := webapi.NewServer(":6666", st)
 
-	if err := server.Run(); err != nil {
-		log.Fatalf("failed to start server: %v", err)
+	if err := srv.Run(context.Background()); err != nil {
+		log.Fatalf("server error: %v", err)
 	}
 }
