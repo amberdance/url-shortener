@@ -5,17 +5,17 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/amberdance/url-shortener/internal/app/storage"
+	"github.com/amberdance/url-shortener/internal/app"
 	"github.com/amberdance/url-shortener/internal/ports/webapi/helpers"
 	"github.com/go-chi/chi/v5"
 )
 
 type URLShortenerHandler struct {
 	host    string
-	storage storage.Storage
+	storage app.Storage
 }
 
-func NewURLShortenerHandler(st storage.Storage, host string) *URLShortenerHandler {
+func NewURLShortenerHandler(st app.Storage, host string) *URLShortenerHandler {
 	return &URLShortenerHandler{
 		storage: st,
 		host:    strings.TrimRight(host, "/") + "/",

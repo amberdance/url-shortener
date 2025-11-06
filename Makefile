@@ -1,6 +1,9 @@
 TEST_FLAGS=-v -coverprofile=coverage.out -covermode=atomic
 TEST_PATH=./internal/...
 
+address ?=
+host ?=
+
 test:
 	go test $(TEST_PATH) $(TEST_FLAGS)
 	@echo ""
@@ -9,5 +12,9 @@ test:
 	@echo "===================="
 	go tool cover -func=coverage.out | tail -n 10
 
+build:
+	go build -o .bin/server cmd/shortener/main.go
+
 run:
-	go build -o .bin/server cmd/shortener/main.go && .bin/server
+	go build -o .bin/server cmd/shortener/main.go
+	.bin/server $(if $(address),-a $(address)) $(if $(host),-b $(host))

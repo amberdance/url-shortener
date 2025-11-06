@@ -8,11 +8,10 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
-	"strings"
 	"syscall"
 	"time"
 
-	"github.com/amberdance/url-shortener/internal/app/storage"
+	"github.com/amberdance/url-shortener/internal/app"
 	"github.com/amberdance/url-shortener/internal/ports/webapi/handlers"
 	webmw "github.com/amberdance/url-shortener/internal/ports/webapi/middleware"
 
@@ -25,13 +24,11 @@ type Server struct {
 	httpServer *http.Server
 }
 
-func NewServer(addr string, st storage.Storage) *Server {
-	host := fmt.Sprintf("http://localhost:%s/", strings.TrimPrefix(addr, ":"))
-	router := buildRoutes(st, host)
+func NewServer(a *app.App) *Server {
+	router := buildRoutes(a)
 	handler := cors.AllowAll().Handler(router)
-
 	httpSrv := &http.Server{
-		Addr:    addr,
+		Addr:    a.Config().Address,
 		Handler: handler,
 	}
 
@@ -77,7 +74,7 @@ func (s *Server) Stop(ctx context.Context) error {
 	return s.httpServer.Shutdown(ctx)
 }
 
-func buildRoutes(st storage.Storage, host string) *chi.Mux {
+func buildRoutes(a *app.App) *chi.Mux {
 	router := chi.NewRouter()
 
 	router.Use(middleware.RequestID)
@@ -87,7 +84,7 @@ func buildRoutes(st storage.Storage, host string) *chi.Mux {
 	router.Mount("/health", handlers.NewHealthcheckHandler().Routes())
 	router.Group(func(r chi.Router) {
 		r.Use(webmw.TextPlainHeaderMiddleware)
-		r.Mount("/", handlers.NewURLShortenerHandler(st, host).Routes())
+		r.Mount("/", handlers.NewURLShortenerHandler(a.Storage(), a.Config().BaseURL).Routes())
 	})
 
 	//router.NotFound(func(w http.ResponseWriter, r *http.Request) {

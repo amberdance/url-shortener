@@ -1,4 +1,4 @@
-package storage
+package app
 
 type Storage interface {
 	Save(shortID, url string) error
