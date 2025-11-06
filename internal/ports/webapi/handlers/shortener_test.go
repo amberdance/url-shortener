@@ -55,8 +55,10 @@ func TestPost_BadRequest(t *testing.T) {
 			req := httptest.NewRequest(http.MethodPost, "/", tt.body)
 			w := httptest.NewRecorder()
 			router.ServeHTTP(w, req)
+			res := w.Result()
+			defer res.Body.Close()
 
-			if w.Result().StatusCode != http.StatusBadRequest {
+			if res.StatusCode != http.StatusBadRequest {
 				t.Errorf("[%s] expected 400, got %d", tt.name, w.Result().StatusCode)
 			}
 		})
@@ -92,8 +94,10 @@ func TestGet_NotFound(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "/notfound", nil)
 	w := httptest.NewRecorder()
 	router.ServeHTTP(w, req)
+	res := w.Result()
+	defer res.Body.Close()
 
-	if w.Result().StatusCode != http.StatusBadRequest {
+	if res.StatusCode != http.StatusBadRequest {
 		t.Errorf("expected 400, got %d", w.Result().StatusCode)
 	}
 }
