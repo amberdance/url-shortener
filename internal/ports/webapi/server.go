@@ -68,7 +68,7 @@ func (s *Server) handlePost(w http.ResponseWriter, r *http.Request) {
 	id := generateShortID()
 	s.storage[id] = originalURL
 
-	shortURL := fmt.Sprintf("http://localhost:%s/", s.addr) + id
+	shortURL := fmt.Sprintf("http://localhost%s/", s.addr) + id
 
 	w.Header().Set("Content-Type", "text/plain")
 	w.WriteHeader(http.StatusCreated)
