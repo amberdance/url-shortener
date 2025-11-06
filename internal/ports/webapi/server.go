@@ -7,7 +7,6 @@ import (
 	"math/rand"
 	"net/http"
 	"strings"
-	"time"
 )
 
 type Server struct {
@@ -95,7 +94,6 @@ func (s *Server) handleGet(w http.ResponseWriter, r *http.Request) {
 
 func generateShortID() string {
 	const letters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
-	rand.Seed(time.Now().UnixNano())
 	b := make([]byte, 8)
 	for i := range b {
 		b[i] = letters[rand.Intn(len(letters))]
