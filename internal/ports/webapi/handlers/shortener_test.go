@@ -59,7 +59,7 @@ func TestPost_BadRequest(t *testing.T) {
 			defer res.Body.Close()
 
 			if res.StatusCode != http.StatusBadRequest {
-				t.Errorf("[%s] expected 400, got %d", tt.name, w.Result().StatusCode)
+				t.Errorf("[%s] expected 400, got %d", tt.name, res.StatusCode)
 			}
 		})
 	}
@@ -98,6 +98,6 @@ func TestGet_NotFound(t *testing.T) {
 	defer res.Body.Close()
 
 	if res.StatusCode != http.StatusBadRequest {
-		t.Errorf("expected 400, got %d", w.Result().StatusCode)
+		t.Errorf("expected 400, got %d", res.StatusCode)
 	}
 }
