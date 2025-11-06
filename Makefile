@@ -1,2 +1,2 @@
 run:
-	go build -o .bin/server cmd/server/main.go && .bin/server
+	go build -o .bin/server cmd/shortener/main.go && .bin/server
