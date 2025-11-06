@@ -55,7 +55,7 @@ func (s *Server) Run(ctx context.Context) error {
 		defer cancel()
 
 		if err := s.httpServer.Shutdown(shutdownCtx); err != nil {
-			log.Printf("HTTP server Shutdown: %v", err)
+			log.Printf("HTTP server shutdown: %v", err)
 		}
 		close(idleConnsClosed)
 	}()
@@ -76,12 +76,12 @@ func (s *Server) Stop(ctx context.Context) error {
 
 func buildRoutes(a *app.App) *chi.Mux {
 	router := chi.NewRouter()
-
 	router.Use(middleware.RequestID)
 	router.Use(middleware.Logger)
 	router.Use(middleware.Recoverer)
 
 	router.Mount("/health", handlers.NewHealthcheckHandler().Routes())
+
 	router.Group(func(r chi.Router) {
 		r.Use(webmw.TextPlainHeaderMiddleware)
 		r.Mount("/", handlers.NewURLShortenerHandler(a.Storage(), a.Config().BaseURL).Routes())

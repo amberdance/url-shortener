@@ -20,7 +20,7 @@ func TestPost_Success(t *testing.T) {
 	h := setupTest()
 	router := h.Routes()
 
-	body := bytes.NewBufferString("https://practicum.yandex.ru/")
+	body := bytes.NewBufferString("https://hard2code.ru")
 	req := httptest.NewRequest(http.MethodPost, "/", body)
 	w := httptest.NewRecorder()
 
@@ -69,7 +69,7 @@ func TestGet_Success(t *testing.T) {
 	h := setupTest()
 	router := h.Routes()
 
-	_ = h.storage.Save("abc123", "https://yandex.ru")
+	_ = h.storage.Save("abc123", "https://hard2code.ru")
 
 	req := httptest.NewRequest(http.MethodGet, "/abc123", nil)
 	w := httptest.NewRecorder()
