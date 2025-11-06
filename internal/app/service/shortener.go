@@ -6,15 +6,15 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/amberdance/url-shortener/internal/app"
+	"github.com/amberdance/url-shortener/internal/domain"
 	"github.com/amberdance/url-shortener/internal/ports/webapi/helpers"
 )
 
 type URLShortenerService struct {
-	storage app.Storage
+	storage domain.Storage
 }
 
-func NewURLShortenerService(storage app.Storage) *URLShortenerService {
+func NewURLShortenerService(storage domain.Storage) *URLShortenerService {
 	return &URLShortenerService{storage: storage}
 }
 

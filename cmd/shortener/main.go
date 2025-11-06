@@ -14,6 +14,8 @@ func main() {
 		log.Fatalln(err)
 	}
 
+	defer a.Close()
+
 	srv := webapi.NewServer(a)
 	if err := srv.Run(context.Background()); err != nil {
 		log.Fatalf("server error: %v", err)
