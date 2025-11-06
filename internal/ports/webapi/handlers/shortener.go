@@ -5,19 +5,18 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/amberdance/url-shortener/internal/app/storage"
-	"github.com/amberdance/url-shortener/internal/ports/webapi/helpers"
+	"github.com/amberdance/url-shortener/internal/app/service"
 	"github.com/go-chi/chi/v5"
 )
 
 type URLShortenerHandler struct {
 	host    string
-	storage storage.Storage
+	service *service.URLShortenerService
 }
 
-func NewURLShortenerHandler(st storage.Storage, host string) *URLShortenerHandler {
+func NewURLShortenerHandler(srv *service.URLShortenerService, host string) *URLShortenerHandler {
 	return &URLShortenerHandler{
-		storage: st,
+		service: srv,
 		host:    strings.TrimRight(host, "/") + "/",
 	}
 }
@@ -37,37 +36,26 @@ func (h *URLShortenerHandler) post(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	originalURL := strings.TrimSpace(string(body))
-	if originalURL == "" {
-		http.Error(w, "Bad request", http.StatusBadRequest)
-		return
-	}
-
-	id := helpers.GenerateShortID()
-	if err := h.storage.Save(id, originalURL); err != nil {
-		http.Error(w, "Failed to save URL", http.StatusInternalServerError)
+	id, err := h.service.CreateShortURL(r.Context(), string(body))
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	shortURL := h.host + id
 	w.WriteHeader(http.StatusCreated)
-	_, _ = w.Write([]byte(shortURL))
+	w.Write([]byte(shortURL))
 }
 
 func (h *URLShortenerHandler) get(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 
-	if id == "" {
+	original, err := h.service.ResolveURL(r.Context(), id)
+	if err != nil {
 		http.Error(w, "Bad request", http.StatusBadRequest)
 		return
 	}
 
-	originalURL, ok := h.storage.Get(id)
-	if !ok {
-		http.Error(w, "Bad request", http.StatusBadRequest)
-		return
-	}
-
-	w.Header().Set("Location", originalURL)
+	w.Header().Set("Location", original)
 	w.WriteHeader(http.StatusTemporaryRedirect)
 }

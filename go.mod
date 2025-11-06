@@ -4,5 +4,6 @@ go 1.24.10
 
 require (
 	github.com/go-chi/chi/v5 v5.2.3
+	github.com/lmittmann/tint v1.1.2
 	github.com/rs/cors v1.11.1
 )
