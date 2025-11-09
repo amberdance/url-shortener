@@ -50,7 +50,7 @@ func GetConfig() *Config {
 			cfg.BaseURL = fmt.Sprintf("http://%s", cfg.BaseURL)
 		}
 
-		cfg.BaseURL = strings.TrimRight(cfg.BaseURL, "/")
+		cfg.BaseURL = strings.TrimRight(cfg.BaseURL, "/") + "/"
 	})
 
 	return cfg
