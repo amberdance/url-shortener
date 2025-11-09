@@ -43,7 +43,7 @@ func GetConfig() *Config {
 		}
 
 		if *baseURL != "" {
-			cfg.BaseURL = strings.TrimRight(*baseURL, "/") + "/"
+			cfg.BaseURL = *baseURL
 		}
 
 		if !strings.HasPrefix(cfg.BaseURL, "http://") && !strings.HasPrefix(cfg.BaseURL, "https://") {

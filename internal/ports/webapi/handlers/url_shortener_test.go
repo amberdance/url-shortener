@@ -15,7 +15,7 @@ import (
 	infr "github.com/amberdance/url-shortener/internal/infrastructure/repository/url"
 )
 
-const testHost string = "http://127.0.0.1:9999"
+const testHost string = "http://127.0.0.1:9999/"
 
 func setupTest() *URLShortenerHandler {
 	repo := infr.NewInMemoryRepository()
