@@ -34,7 +34,7 @@ func GetConfig() *Config {
 			log.Fatalln(err)
 		}
 
-		address := flag.String("a", "", "Адрес запуска HTTP-сервера (например, localhost:8080)")
+		address := flag.String("a", "localhost:8080", "Адрес запуска HTTP-сервера (например, localhost:8080)")
 		baseURL := flag.String("b", "", "Базовый адрес коротких ссылок (например, http://localhost:8080)")
 		flag.Parse()
 
