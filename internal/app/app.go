@@ -56,7 +56,7 @@ func (a *App) Close() {
 }
 
 func (a *App) init() error {
-	a.config = config.NewConfig()
+	a.config = config.GetConfig()
 	a.logger = logging.NewLogger()
 
 	// @TODO: не забыть скрыть за интерфейсом
