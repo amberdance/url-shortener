@@ -1,17 +1,27 @@
 package app
 
-import "github.com/amberdance/url-shortener/internal/app/service"
+import (
+	"github.com/amberdance/url-shortener/internal/app/usecase"
+	"github.com/amberdance/url-shortener/internal/app/usecase/url"
+)
 
 type Container struct {
-	Services struct {
-		Shortener *service.URLShortenerService
+	RepositoryProvider RepositoryProvider
+	UseCases           struct {
+		URL usecase.URLUseCases
 	}
 }
 
-func buildContainer(a *App) *Container {
-	container := &Container{
-		Services: struct{ Shortener *service.URLShortenerService }{Shortener: service.NewURLShortenerService(a.storage)},
+func buildContainer(r RepositoryProvider) *Container {
+	return &Container{
+		RepositoryProvider: r,
+		UseCases: struct {
+			URL usecase.URLUseCases
+		}{
+			URL: usecase.URLUseCases{
+				Create:   url.NewCreateUrlUseCase(r.URLRepository()),
+				GetByUrl: url.NewGetByHashUseCase(r.URLRepository()),
+			},
+		},
 	}
-
-	return container
 }

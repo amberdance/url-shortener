@@ -2,32 +2,39 @@ package handlers
 
 import (
 	"bytes"
+	"context"
 	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
 
-	"github.com/amberdance/url-shortener/internal/app/service"
-	"github.com/amberdance/url-shortener/internal/infrastructure/storage"
+	"github.com/amberdance/url-shortener/internal/app/command"
+	"github.com/amberdance/url-shortener/internal/app/usecase"
+	"github.com/amberdance/url-shortener/internal/app/usecase/url"
+	infr "github.com/amberdance/url-shortener/internal/infrastructure/repository/url"
 )
 
+const testHost string = "http://127.0.0.1:9999/"
+
 func setupTest() *URLShortenerHandler {
+	repo := infr.NewInMemoryRepository()
+	useCases := usecase.URLUseCases{
+		Create:   url.NewCreateUrlUseCase(repo),
+		GetByUrl: url.NewGetByHashUseCase(repo),
+	}
 	return NewURLShortenerHandler(
-		service.NewURLShortenerService(storage.NewInMemoryStorage()),
-		"http://localhost:8080/",
+		testHost,
+		useCases,
 	)
 }
 
 func TestPost_Success(t *testing.T) {
 	h := setupTest()
-	router := h.Routes()
-
-	body := bytes.NewBufferString("https://hard2code.ru")
-	req := httptest.NewRequest(http.MethodPost, "/", body)
+	req := httptest.NewRequest(http.MethodPost, "/", bytes.NewBufferString("https://hard2code.ru"))
 	w := httptest.NewRecorder()
 
-	router.ServeHTTP(w, req)
+	h.Routes().ServeHTTP(w, req)
 	res := w.Result()
 	defer res.Body.Close()
 
@@ -36,7 +43,7 @@ func TestPost_Success(t *testing.T) {
 	}
 
 	respBody, _ := io.ReadAll(res.Body)
-	if !strings.HasPrefix(string(respBody), "http://localhost:8080/") {
+	if !strings.HasPrefix(string(respBody), testHost) {
 		t.Errorf("unexpected response: %s", respBody)
 	}
 }
@@ -72,8 +79,13 @@ func TestGet_Success(t *testing.T) {
 	h := setupTest()
 	router := h.Routes()
 
-	id, _ := h.service.CreateShortURL(t.Context(), "https://hard2code.ru")
-	req := httptest.NewRequest(http.MethodGet, "/"+id, nil)
+	ctx := context.Background()
+	entry, err := h.usecases.Create.Run(ctx, command.CreateURLEntryCommand{OriginalURL: "https://hard2code.ru"})
+	if err != nil {
+		t.Fatalf("create failed: %v", err)
+	}
+
+	req := httptest.NewRequest(http.MethodGet, "/"+entry.Hash, nil)
 	w := httptest.NewRecorder()
 	router.ServeHTTP(w, req)
 
@@ -90,7 +102,6 @@ func TestGet_Success(t *testing.T) {
 }
 
 func TestGet_NotFound(t *testing.T) {
-	t.Skip()
 	h := setupTest()
 	router := h.Routes()
 
@@ -100,7 +111,7 @@ func TestGet_NotFound(t *testing.T) {
 	res := w.Result()
 	defer res.Body.Close()
 
-	if res.StatusCode != http.StatusBadRequest {
+	if res.StatusCode != http.StatusNotFound {
 		t.Errorf("expected 404, got %d", res.StatusCode)
 	}
 }

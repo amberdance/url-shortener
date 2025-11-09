@@ -20,7 +20,7 @@ type Logger struct {
 var _ shared.Logger = (*Logger)(nil)
 
 func NewLogger() *Logger {
-	cfg := config.NewConfig()
+	cfg := config.GetConfig()
 	f, err := os.OpenFile("./logs/app.log", os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0666)
 	if err != nil {
 		log.Fatalln(err)
