@@ -38,19 +38,14 @@ func GetConfig() *Config {
 		baseURL := flag.String("b", "", "Базовый адрес коротких ссылок (например, http://localhost:8080)")
 		flag.Parse()
 
-		if *address != "" {
-			cfg.Address = *address
+		url := *baseURL
+		if url == "" {
+			url = fmt.Sprintf("http://%s", *address)
+			*baseURL = strings.TrimRight(cfg.BaseURL, "/") + "/"
 		}
 
-		if *baseURL != "" {
-			cfg.BaseURL = *baseURL
-		}
-
-		if !strings.HasPrefix(cfg.BaseURL, "http://") && !strings.HasPrefix(cfg.BaseURL, "https://") {
-			cfg.BaseURL = fmt.Sprintf("http://%s", cfg.BaseURL)
-		}
-
-		cfg.BaseURL = strings.TrimRight(cfg.BaseURL, "/") + "/"
+		cfg.Address = *address
+		cfg.BaseURL = url
 	})
 
 	return cfg
