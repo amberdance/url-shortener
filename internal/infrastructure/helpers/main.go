@@ -4,7 +4,7 @@ import (
 	"math/rand"
 )
 
-func GenerateShortID() string {
+func GenerateHash() string {
 	const letters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 	b := make([]byte, 8)
 	for i := range b {

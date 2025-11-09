@@ -85,7 +85,7 @@ func buildRoutes(a *app.App) *chi.Mux {
 
 	router.Group(func(r chi.Router) {
 		r.Use(webmw.TextPlainHeaderMiddleware)
-		r.Mount("/", handlers.NewURLShortenerHandler(a.Container().Services.Shortener, a.Config().BaseURL).Routes())
+		r.Mount("/", handlers.NewURLShortenerHandler(a.Config().BaseURL, a.Container().UseCases.URL).Routes())
 	})
 
 	//router.NotFound(func(w http.ResponseWriter, r *http.Request) {
