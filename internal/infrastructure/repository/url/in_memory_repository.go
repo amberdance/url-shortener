@@ -11,13 +11,13 @@ import (
 )
 
 type inMemoryStorage struct {
-	data map[uuid.UUID]*model.Url
+	data map[uuid.UUID]*model.URL
 	mu   sync.RWMutex
 }
 
 func newInMemoryStorage() *inMemoryStorage {
 	return &inMemoryStorage{
-		data: make(map[uuid.UUID]*model.Url),
+		data: make(map[uuid.UUID]*model.URL),
 	}
 }
 
@@ -33,7 +33,7 @@ func NewInMemoryRepository() repository.URLRepository {
 	}
 }
 
-func (r *inMemoryRepository) Create(_ context.Context, m *model.Url) error {
+func (r *inMemoryRepository) Create(_ context.Context, m *model.URL) error {
 	r.storage.mu.Lock()
 	defer r.storage.mu.Unlock()
 
@@ -45,7 +45,7 @@ func (r *inMemoryRepository) Create(_ context.Context, m *model.Url) error {
 	return nil
 }
 
-func (r *inMemoryRepository) FindByHash(_ context.Context, url string) (*model.Url, error) {
+func (r *inMemoryRepository) FindByHash(_ context.Context, url string) (*model.URL, error) {
 	r.storage.mu.RLock()
 	defer r.storage.mu.RUnlock()
 
