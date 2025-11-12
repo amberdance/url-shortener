@@ -13,7 +13,7 @@ type CreateUseCase struct {
 	repository repository.URLRepository
 }
 
-func NewCreateUrlUseCase(r repository.URLRepository) CreateUseCase {
+func NewCreateURLUseCase(r repository.URLRepository) CreateUseCase {
 	return CreateUseCase{repository: r}
 }
 

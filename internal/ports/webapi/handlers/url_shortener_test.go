@@ -20,7 +20,7 @@ const testHost string = "http://127.0.0.1:9999/"
 func setupTest() *URLShortenerHandler {
 	repo := infr.NewInMemoryRepository()
 	useCases := usecase.URLUseCases{
-		Create:   url.NewCreateUrlUseCase(repo),
+		Create:   url.NewCreateURLUseCase(repo),
 		GetByURL: url.NewGetByHashUseCase(repo),
 	}
 	return NewURLShortenerHandler(
