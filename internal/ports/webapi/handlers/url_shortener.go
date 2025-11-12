@@ -62,7 +62,7 @@ func (h *URLShortenerHandler) get(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	model, err := h.usecases.GetByUrl.Run(r.Context(), command.GetURLByHashCommand{
+	model, err := h.usecases.GetByURL.Run(r.Context(), command.GetURLByHashCommand{
 		Hash: hash,
 	})
 	if err != nil {

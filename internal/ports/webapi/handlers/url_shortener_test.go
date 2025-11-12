@@ -21,7 +21,7 @@ func setupTest() *URLShortenerHandler {
 	repo := infr.NewInMemoryRepository()
 	useCases := usecase.URLUseCases{
 		Create:   url.NewCreateUrlUseCase(repo),
-		GetByUrl: url.NewGetByHashUseCase(repo),
+		GetByURL: url.NewGetByHashUseCase(repo),
 	}
 	return NewURLShortenerHandler(
 		testHost,
