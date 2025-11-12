@@ -12,8 +12,8 @@ import (
 )
 
 type Config struct {
-	Address  string `env:"HTTP_ADDR" env-default:"0.0.0.0:8080"`
-	BaseURL  string `env:"HTTP_BASE_URL" env-default:""`
+	Address  string `env:"SERVER_ADDRESS" env-default:"0.0.0.0:8080"`
+	BaseURL  string `env:"BASE_URL" env-default:""`
 	LogLevel string `env:"LOG_LEVEL" env-default:"info"`
 }
 
