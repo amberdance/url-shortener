@@ -25,6 +25,7 @@ func NewLogger() *Logger {
 	if err != nil {
 		log.Fatalln(err)
 	}
+	defer f.Close()
 
 	level := slog.LevelDebug
 
