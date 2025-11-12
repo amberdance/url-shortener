@@ -16,6 +16,6 @@ func NewGetByHashUseCase(r repository.URLRepository) GetByHashUseCase {
 	return GetByHashUseCase{repository: r}
 }
 
-func (uc GetByHashUseCase) Run(ctx context.Context, cmd command.GetURLByHashCommand) (*model.Url, error) {
+func (uc GetByHashUseCase) Run(ctx context.Context, cmd command.GetURLByHashCommand) (*model.URL, error) {
 	return uc.repository.FindByHash(ctx, cmd.Hash)
 }

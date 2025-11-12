@@ -17,7 +17,7 @@ func NewCreateURLUseCase(r repository.URLRepository) CreateUseCase {
 	return CreateUseCase{repository: r}
 }
 
-func (uc CreateUseCase) Run(ctx context.Context, cmd command.CreateURLEntryCommand) (*model.Url, error) {
+func (uc CreateUseCase) Run(ctx context.Context, cmd command.CreateURLEntryCommand) (*model.URL, error) {
 	m := model.NewURL(cmd.OriginalURL, helpers.GenerateHash())
 	err := uc.repository.Create(ctx, m)
 	if err != nil {
