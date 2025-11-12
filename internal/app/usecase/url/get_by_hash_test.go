@@ -12,7 +12,7 @@ import (
 
 func TestGetByHashUseCase_Run_Success(t *testing.T) {
 	repo := url.NewInMemoryRepository()
-	create := urlusecase.NewCreateUrlUseCase(repo)
+	create := urlusecase.NewCreateURLUseCase(repo)
 	get := urlusecase.NewGetByHashUseCase(repo)
 	cmd := command.CreateURLEntryCommand{OriginalURL: "https://hard2code.ru"}
 

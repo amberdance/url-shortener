@@ -19,7 +19,7 @@ func buildContainer(r RepositoryProvider) *Container {
 			URL usecase.URLUseCases
 		}{
 			URL: usecase.URLUseCases{
-				Create:   url.NewCreateUrlUseCase(r.URLRepository()),
+				Create:   url.NewCreateURLUseCase(r.URLRepository()),
 				GetByURL: url.NewGetByHashUseCase(r.URLRepository()),
 			},
 		},
