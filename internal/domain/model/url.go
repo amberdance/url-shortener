@@ -6,7 +6,7 @@ import (
 	"github.com/google/uuid"
 )
 
-type Url struct {
+type URL struct {
 	ID          uuid.UUID
 	Hash        string
 	OriginalURL string
@@ -14,8 +14,8 @@ type Url struct {
 	UpdatedAt   *time.Time
 }
 
-func NewURL(original string, hash string) *Url {
-	return &Url{
+func NewURL(original string, hash string) *URL {
+	return &URL{
 		ID:          uuid.Must(uuid.NewV7()),
 		OriginalURL: original,
 		Hash:        hash,

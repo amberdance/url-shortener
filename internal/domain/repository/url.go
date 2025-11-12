@@ -7,6 +7,6 @@ import (
 )
 
 type URLRepository interface {
-	Create(ctx context.Context, url *model.Url) error
-	FindByHash(ctx context.Context, hash string) (*model.Url, error)
+	Create(ctx context.Context, url *model.URL) error
+	FindByHash(ctx context.Context, hash string) (*model.URL, error)
 }
