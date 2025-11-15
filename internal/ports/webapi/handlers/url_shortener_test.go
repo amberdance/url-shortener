@@ -3,6 +3,7 @@ package handlers
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -12,12 +13,25 @@ import (
 	"github.com/amberdance/url-shortener/internal/app/command"
 	"github.com/amberdance/url-shortener/internal/app/usecase"
 	"github.com/amberdance/url-shortener/internal/app/usecase/url"
+	"github.com/amberdance/url-shortener/internal/domain/shared"
 	infr "github.com/amberdance/url-shortener/internal/infrastructure/repository/url"
+	"github.com/amberdance/url-shortener/internal/ports/webapi/dto"
+	"github.com/go-playground/validator/v10"
+	"github.com/stretchr/testify/assert"
 )
 
 const testHost string = "http://127.0.0.1:9999/"
 
+type MockLogger struct{}
+
+func (m MockLogger) Debug(_ string, _ ...any) {}
+func (m MockLogger) Info(_ string, _ ...any)  {}
+func (m MockLogger) Error(_ string, _ ...any) {}
+func (m MockLogger) Close() error             { return nil }
+
 func setupTest() *URLShortenerHandler {
+	var log shared.Logger = MockLogger{}
+
 	repo := infr.NewInMemoryRepository()
 	useCases := usecase.URLUseCases{
 		Create:   url.NewCreateURLUseCase(repo),
@@ -26,6 +40,8 @@ func setupTest() *URLShortenerHandler {
 	return NewURLShortenerHandler(
 		testHost,
 		useCases,
+		validator.New(),
+		log,
 	)
 }
 
@@ -113,5 +129,56 @@ func TestGet_NotFound(t *testing.T) {
 
 	if res.StatusCode != http.StatusNotFound {
 		t.Errorf("expected 404, got %d", res.StatusCode)
+	}
+}
+
+func TestShortenJSON_Success(t *testing.T) {
+	h := setupTest()
+	router := h.Routes()
+
+	body := `{"url":"https://hard2code.ru"}`
+	req := httptest.NewRequest(http.MethodPost, "/api/shorten", bytes.NewBufferString(body))
+	req.Header.Set("Content-Type", "application/json")
+
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+	res := w.Result()
+	defer res.Body.Close()
+
+	assert.Equal(t, http.StatusCreated, res.StatusCode)
+	assert.Equal(t, "application/json", res.Header.Get("Content-Type"))
+
+	var resp dto.ShortURLResponse
+	err := json.NewDecoder(res.Body).Decode(&resp)
+	assert.NoError(t, err)
+}
+
+func TestShortenJSON_BadRequest(t *testing.T) {
+	h := setupTest()
+	router := h.Routes()
+
+	tests := []struct {
+		name string
+		body string
+	}{
+		{"missing field", `{"u":"wrong"}`},
+		{"null field", `{"url":null}`},
+		{"empty string", `{"url":""}`},
+		{"spaces", `{"url":"   "}`},
+		{"invalid json", `{invalid`},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			req := httptest.NewRequest(http.MethodPost, "/api/shorten", bytes.NewBufferString(tt.body))
+			req.Header.Set("Content-Type", "application/json")
+
+			w := httptest.NewRecorder()
+			router.ServeHTTP(w, req)
+			res := w.Result()
+			defer res.Body.Close()
+
+			assert.Equal(t, http.StatusBadRequest, res.StatusCode)
+		})
 	}
 }

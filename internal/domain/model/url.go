@@ -1,8 +1,10 @@
 package model
 
 import (
+	"strings"
 	"time"
 
+	"github.com/amberdance/url-shortener/internal/domain/errs"
 	"github.com/google/uuid"
 )
 
@@ -14,11 +16,21 @@ type URL struct {
 	UpdatedAt   *time.Time
 }
 
-func NewURL(original string, hash string) *URL {
+func NewURL(original string, hash string) (*URL, error) {
+	original = strings.TrimSpace(original)
+	hash = strings.TrimSpace(hash)
+
+	if original == "" {
+		return nil, errs.ValidationError("empty url")
+	}
+	if hash == "" {
+		return nil, errs.ValidationError("empty hash")
+	}
+
 	return &URL{
 		ID:          uuid.Must(uuid.NewV7()),
 		OriginalURL: original,
 		Hash:        hash,
 		CreatedAt:   time.Now(),
-	}
+	}, nil
 }
