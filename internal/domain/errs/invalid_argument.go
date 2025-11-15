@@ -6,4 +6,4 @@ func (e InvalidArgumentError) Error() string {
 	return string(e)
 }
 
-func (InvalidArgumentError) Id() string { return "invalid_argument" }
+func (InvalidArgumentError) ID() string { return "invalid_argument" }

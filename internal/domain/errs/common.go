@@ -6,4 +6,4 @@ func (e ValidationError) Error() string {
 	return string(e)
 }
 
-func (ValidationError) Id() string { return "validation_error" }
+func (ValidationError) ID() string { return "validation_error" }

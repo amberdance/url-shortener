@@ -6,4 +6,4 @@ func (e InternalError) Error() string {
 	return string(e)
 }
 
-func (InternalError) Id() string { return "internal_error" }
+func (InternalError) ID() string { return "internal_error" }

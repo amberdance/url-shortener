@@ -20,18 +20,18 @@ func HandleError(w http.ResponseWriter, err error) {
 
 	switch e := err.(type) {
 	case errs.NotFoundError:
-		code, errorID = http.StatusNotFound, e.Id()
+		code, errorID = http.StatusNotFound, e.ID()
 	case errs.InvalidArgumentError:
-		code, errorID = http.StatusUnprocessableEntity, e.Id()
+		code, errorID = http.StatusUnprocessableEntity, e.ID()
 	case errs.ValidationError:
-		code, errorID = http.StatusBadRequest, e.Id()
+		code, errorID = http.StatusBadRequest, e.ID()
 	case errs.InternalError:
-		code, errorID = http.StatusInternalServerError, e.Id()
+		code, errorID = http.StatusInternalServerError, e.ID()
 		log.Println("Internal error:", err.Error())
 	case errs.UnauthorizedError:
-		code, errorID = http.StatusUnauthorized, e.Id()
+		code, errorID = http.StatusUnauthorized, e.ID()
 	case errs.DuplicateEntryError:
-		code, errorID = http.StatusConflict, e.Id()
+		code, errorID = http.StatusConflict, e.ID()
 	default:
 		code, errorID = http.StatusInternalServerError, "internal_error"
 		log.Println("Unexpected error:", err.Error())

@@ -2,8 +2,6 @@ package errs
 
 type NotFoundError string
 
-func (e NotFoundError) Error() string {
-	return string(e)
-}
+func (e NotFoundError) Error() string { return string(e) }
 
-func (NotFoundError) Id() string { return "not_found" }
+func (NotFoundError) ID() string { return "not_found" }

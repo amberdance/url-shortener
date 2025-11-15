@@ -6,4 +6,4 @@ func (e DuplicateEntryError) Error() string {
 	return string(e)
 }
 
-func (DuplicateEntryError) Id() string { return "duplicate_entry" }
+func (DuplicateEntryError) ID() string { return "duplicate_entry" }

@@ -6,6 +6,6 @@ func (e UnauthorizedError) Error() string {
 	return string(e)
 }
 
-func (UnauthorizedError) Id() string {
+func (UnauthorizedError) ID() string {
 	return "unauthorized"
 }
