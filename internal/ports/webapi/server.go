@@ -85,6 +85,9 @@ func buildRoutes(a *app.App) *chi.Mux {
 
 	router.Group(func(r chi.Router) {
 		r.Use(webmw.JSONMiddleware)
+		r.Use(webmw.GzipDecompressMiddleware)
+		r.Use(webmw.GzipCompressMiddleware)
+
 		r.Mount("/", handlers.NewURLShortenerHandler(
 			a.Config().BaseURL,
 			a.Container().UseCases.URL,
