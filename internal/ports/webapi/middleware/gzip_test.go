@@ -46,7 +46,10 @@ func TestGzipDecompressMiddleware_InvalidGzip(t *testing.T) {
 	w := httptest.NewRecorder()
 	GzipDecompressMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {})).ServeHTTP(w, req)
 
-	assert.Equal(t, http.StatusBadRequest, w.Result().StatusCode)
+	res := w.Result()
+	defer res.Body.Close()
+
+	assert.Equal(t, http.StatusBadRequest, res.StatusCode)
 }
 
 func TestGzipDecompressMiddleware_NoGzip(t *testing.T) {
@@ -61,6 +64,7 @@ func TestGzipDecompressMiddleware_NoGzip(t *testing.T) {
 	w := httptest.NewRecorder()
 	GzipDecompressMiddleware(h).ServeHTTP(w, req)
 
+	// Result не вызывается → ok
 	assert.Equal(t, "plain text", received)
 }
 
@@ -77,6 +81,8 @@ func TestGzipCompressMiddleware_CompressJSON(t *testing.T) {
 	GzipCompressMiddleware(h).ServeHTTP(w, req)
 
 	res := w.Result()
+	defer res.Body.Close()
+
 	assert.Equal(t, "gzip", res.Header.Get("Content-Encoding"))
 
 	gz, err := gzip.NewReader(res.Body)
@@ -100,6 +106,8 @@ func TestGzipCompressMiddleware_SkipUnsupportedTypes(t *testing.T) {
 	GzipCompressMiddleware(h).ServeHTTP(w, req)
 
 	res := w.Result()
+	defer res.Body.Close()
+
 	assert.NotEqual(t, "gzip", res.Header.Get("Content-Encoding"))
 
 	data, _ := io.ReadAll(res.Body)
@@ -118,6 +126,8 @@ func TestGzipCompressMiddleware_NoAcceptEncoding(t *testing.T) {
 	GzipCompressMiddleware(h).ServeHTTP(w, req)
 
 	res := w.Result()
+	defer res.Body.Close()
+
 	assert.Empty(t, res.Header.Get("Content-Encoding"))
 
 	data, _ := io.ReadAll(res.Body)
