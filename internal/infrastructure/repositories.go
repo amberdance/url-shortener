@@ -1,6 +1,7 @@
 package app
 
 import (
+	"github.com/amberdance/url-shortener/internal/config"
 	"github.com/amberdance/url-shortener/internal/domain/repository"
 	infr "github.com/amberdance/url-shortener/internal/infrastructure/repository/url"
 )
@@ -13,9 +14,9 @@ type repositories struct {
 	urlRepo repository.URLRepository
 }
 
-func NewRepositories() RepositoryProvider {
+func NewRepositories(cfg *config.Config) RepositoryProvider {
 	return &repositories{
-		urlRepo: infr.NewInMemoryRepository(),
+		urlRepo: infr.NewFileRepository(cfg.FileStoragePath),
 	}
 }
 
