@@ -20,3 +20,4 @@ vendor/
 api/
 
 cmd/test/*.go
+/db/
