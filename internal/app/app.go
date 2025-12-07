@@ -62,13 +62,11 @@ func (a *App) init() error {
 	a.config = config.GetConfig()
 	a.logger = logging.NewLogger()
 
-	if a.config.DatabaseDSN != nil {
-		dsn := *a.config.DatabaseDSN
-		st, err := storage.NewPostgresStorage(dsn)
-		if err != nil {
-			return fmt.Errorf("database connection error: %w", err)
-		}
-
+	st, err := storage.NewPostgresStorage(a.config.DatabaseDSN)
+	//if err != nil {
+	//	return fmt.Errorf("database connection error: %w", err)
+	//}
+	if err == nil {
 		a.storage = st
 	}
 

@@ -20,8 +20,12 @@ func (r *repositories) URLRepository() repository.URLRepository {
 }
 
 func NewRepositories(c *config.Config, s *storage.PostgresStorage) Provider {
+	if s != nil {
+		return &repositories{
+			urlRepo: url.NewPostgresRepository(s.Pool()),
+		}
+	}
 	return &repositories{
-		//urlRepo: url.NewPostgresRepository(s.Pool()),
 		urlRepo: url.NewFileRepository(c.FileStoragePath),
 	}
 }
