@@ -2,9 +2,12 @@ package url
 
 import (
 	"context"
+	"errors"
 
+	"github.com/amberdance/url-shortener/internal/domain/errs"
 	"github.com/amberdance/url-shortener/internal/domain/model"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -25,8 +28,15 @@ func (r *PostgresRepository) Create(ctx context.Context, m *model.URL) error {
 		m.OriginalURL,
 		m.CorrelationID,
 	)
+
+	var pgErr *pgconn.PgError
+	if errors.As(err, &pgErr) && pgErr.Code == "23505" {
+		return errs.DuplicateEntryError(pgErr.Message)
+	}
+
 	return err
 }
+
 func (r *PostgresRepository) CreateBatch(ctx context.Context, urls []*model.URL) error {
 	tx, err := r.pool.Begin(ctx)
 	if err != nil {
@@ -81,4 +91,33 @@ func (r *PostgresRepository) FindByHash(ctx context.Context, hash string) (*mode
 	}
 
 	return &u, nil
+}
+
+func (r *PostgresRepository) FindByOriginalURL(ctx context.Context, original string) (*model.URL, error) {
+	row := r.pool.QueryRow(ctx,
+		`select id, hash, original_url, created_at, updated_at, correlation_id 
+         from urls 
+         where original_url = $1 
+         limit 1`,
+		original,
+	)
+
+	var m model.URL
+	err := row.Scan(
+		&m.ID,
+		&m.Hash,
+		&m.OriginalURL,
+		&m.CreatedAt,
+		&m.UpdatedAt,
+		&m.CorrelationID,
+	)
+
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, nil
+		}
+		return nil, err
+	}
+
+	return &m, nil
 }

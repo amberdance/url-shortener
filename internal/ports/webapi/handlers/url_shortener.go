@@ -12,6 +12,7 @@ import (
 	"github.com/amberdance/url-shortener/internal/app/command"
 	"github.com/amberdance/url-shortener/internal/app/usecase"
 	"github.com/amberdance/url-shortener/internal/domain/errs"
+	"github.com/amberdance/url-shortener/internal/domain/model"
 	"github.com/amberdance/url-shortener/internal/domain/shared"
 	"github.com/amberdance/url-shortener/internal/ports/webapi/dto"
 	"github.com/amberdance/url-shortener/internal/ports/webapi/helpers"
@@ -21,7 +22,7 @@ import (
 )
 
 const (
-	writeRequestTimeout = 5 * time.Second
+	writeRequestTimeout = 30 * time.Second
 	readRequestTimeout  = 10 * time.Second
 )
 
@@ -55,25 +56,31 @@ func (h *URLShortenerHandler) shorten(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(r.Context(), writeRequestTimeout)
 	defer cancel()
 
-	model, err := h.usecases.Create.Run(ctx, command.CreateURLEntryCommand{
+	m, err := h.usecases.Create.Run(ctx, command.CreateURLEntryCommand{
 		OriginalURL:   req.URL,
 		CorrelationID: req.CorrelationID,
 	})
+	w.Header().Set("Content-Type", "application/json")
+
 	if err != nil {
 		if errors.Is(err, context.DeadlineExceeded) {
 			w.WriteHeader(http.StatusGatewayTimeout)
 			return
 		}
+
+		var conflictErr errs.DuplicateEntryError
+		if errors.As(err, &conflictErr) {
+			h.handleDuplicateEntryError(w, m)
+			return
+		}
+
 		helpers.HandleError(w, errs.ValidationError("Не удалось сформировать ссылку"))
 		return
 	}
 
-	shortURL := h.baseURL + model.Hash
-
-	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 
-	json.NewEncoder(w).Encode(dto.ShortURLResponse{URL: shortURL})
+	json.NewEncoder(w).Encode(dto.ShortURLResponse{URL: h.formatFullURL(m.Hash)})
 }
 
 func (h *URLShortenerHandler) shortenBatch(w http.ResponseWriter, r *http.Request) {
@@ -99,6 +106,8 @@ func (h *URLShortenerHandler) shortenBatch(w http.ResponseWriter, r *http.Reques
 	urls, err := h.usecases.CreateBatch.Run(ctx, cmd)
 	defer cancel()
 
+	w.Header().Set("Content-Type", "application/json")
+
 	if err != nil {
 		if errors.Is(err, context.DeadlineExceeded) {
 			w.WriteHeader(http.StatusGatewayTimeout)
@@ -113,11 +122,10 @@ func (h *URLShortenerHandler) shortenBatch(w http.ResponseWriter, r *http.Reques
 	for _, u := range urls {
 		res = append(res, dto.BatchShortenURLResponse{
 			CorrelationID: *u.CorrelationID,
-			URL:           u.OriginalURL + "/" + u.Hash,
+			URL:           h.formatFullURL(u.Hash),
 		})
 	}
 
-	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 	_ = json.NewEncoder(w).Encode(res)
 }
@@ -146,7 +154,7 @@ func (h *URLShortenerHandler) get(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(r.Context(), readRequestTimeout)
 	defer cancel()
 
-	model, err := h.usecases.GetByURL.Run(ctx, command.GetURLByHashCommand{
+	m, err := h.usecases.GetByURL.Run(ctx, command.GetURLByHashCommand{
 		Hash: hash,
 	})
 
@@ -159,7 +167,7 @@ func (h *URLShortenerHandler) get(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Header().Set("Location", model.OriginalURL)
+	w.Header().Set("Location", m.OriginalURL)
 	w.WriteHeader(http.StatusTemporaryRedirect)
 }
 
@@ -178,15 +186,31 @@ func (h *URLShortenerHandler) deprecatedPost(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	model, err := h.usecases.Create.Run(r.Context(), command.CreateURLEntryCommand{
+	m, err := h.usecases.Create.Run(r.Context(), command.CreateURLEntryCommand{
 		OriginalURL: original,
 	})
+
 	if err != nil {
+		var conflictErr errs.DuplicateEntryError
+		if errors.As(err, &conflictErr) {
+			h.handleDuplicateEntryError(w, m)
+			return
+		}
+
 		h.logger.Error(err.Error())
 		helpers.HandleError(w, errs.ValidationError("Не удалось сформировать ссылку"))
 		return
 	}
 
 	w.WriteHeader(http.StatusCreated)
-	w.Write([]byte(h.baseURL + model.Hash))
+	w.Write([]byte(h.baseURL + m.Hash))
+}
+
+func (h *URLShortenerHandler) formatFullURL(hash string) string {
+	return h.baseURL + hash
+}
+
+func (h *URLShortenerHandler) handleDuplicateEntryError(w http.ResponseWriter, m *model.URL) {
+	w.WriteHeader(http.StatusConflict)
+	_ = json.NewEncoder(w).Encode(dto.ShortURLResponse{URL: h.formatFullURL(m.Hash)})
 }

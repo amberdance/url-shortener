@@ -9,7 +9,8 @@ CREATE TABLE IF NOT EXISTS urls
     correlation_id varchar(255),
     PRIMARY KEY (id),
     UNIQUE (hash),
-    UNIQUE (correlation_id)
+    UNIQUE (correlation_id),
+    UNIQUE (original_url)
 );
 
 -- migrate:down

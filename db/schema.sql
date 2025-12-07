@@ -1,4 +1,4 @@
-\restrict CShw2mUet00Jr8weM74hmyjznEhm1Q2W9dpks7ZOo5L27phnTcAaXEzl12R9fxm
+\restrict 2bdaXkbHwlA1p8NfRzIWLkT7dsipil95MY8tfe7e3yimQ00BVWTN5iIIzZS2Urm
 
 -- Dumped from database version 17.6 (Debian 17.6-2.pgdg13+1)
 -- Dumped by pg_dump version 17.6 (Homebrew)
@@ -67,6 +67,14 @@ ALTER TABLE ONLY public.urls
 
 
 --
+-- Name: urls urls_original_url_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.urls
+    ADD CONSTRAINT urls_original_url_key UNIQUE (original_url);
+
+
+--
 -- Name: urls urls_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -78,7 +86,7 @@ ALTER TABLE ONLY public.urls
 -- PostgreSQL database dump complete
 --
 
-\unrestrict CShw2mUet00Jr8weM74hmyjznEhm1Q2W9dpks7ZOo5L27phnTcAaXEzl12R9fxm
+\unrestrict 2bdaXkbHwlA1p8NfRzIWLkT7dsipil95MY8tfe7e3yimQ00BVWTN5iIIzZS2Urm
 
 
 --

@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"sync"
 
+	"github.com/amberdance/url-shortener/internal/domain/errs"
 	"github.com/amberdance/url-shortener/internal/domain/model"
 	"github.com/amberdance/url-shortener/internal/domain/repository"
 )
@@ -39,12 +40,15 @@ func NewFileURLRepository(path string) repository.URLRepository {
 	return repo
 }
 
-func (r *FileRepository) Create(_ context.Context, u *model.URL) error {
-	r.mu.Lock()
-	if _, exists := r.data[u.Hash]; exists {
-		r.mu.Unlock()
-		return errors.New("duplicate hash")
+func (r *FileRepository) Create(ctx context.Context, u *model.URL) error {
+	existing, err := r.FindByOriginalURL(ctx, u.OriginalURL)
+	if err == nil {
+		u.Hash = existing.Hash
+		u.ID = existing.ID
+		return errs.DuplicateEntryError("url already exists")
 	}
+
+	r.mu.Lock()
 	r.data[u.Hash] = u
 	r.mu.Unlock()
 
@@ -78,6 +82,19 @@ func (r *FileRepository) FindByHash(_ context.Context, hash string) (*model.URL,
 	}
 
 	return u, nil
+}
+
+func (r *FileRepository) FindByOriginalURL(_ context.Context, originalURL string) (*model.URL, error) {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+
+	for _, item := range r.data {
+		if item.OriginalURL == originalURL {
+			return item, nil
+		}
+	}
+
+	return nil, errs.NotFoundError("url not found")
 }
 
 func (r *FileRepository) load() error {

@@ -13,6 +13,8 @@ import (
 	"github.com/amberdance/url-shortener/internal/app/command"
 	"github.com/amberdance/url-shortener/internal/app/usecase"
 	"github.com/amberdance/url-shortener/internal/app/usecase/url"
+	"github.com/amberdance/url-shortener/internal/domain/model"
+	"github.com/amberdance/url-shortener/internal/domain/repository"
 	"github.com/amberdance/url-shortener/internal/domain/shared"
 	infr "github.com/amberdance/url-shortener/internal/infrastructure/repository/url"
 	"github.com/amberdance/url-shortener/internal/ports/webapi/dto"
@@ -29,21 +31,18 @@ func (m MockLogger) Info(_ string, _ ...any)  {}
 func (m MockLogger) Error(_ string, _ ...any) {}
 func (m MockLogger) Close() error             { return nil }
 
+var repo repository.URLRepository
+
 func setupTest() *URLShortenerHandler {
 	var log shared.Logger = MockLogger{}
 
-	repo := infr.NewInMemoryURLRepository()
+	repo = infr.NewInMemoryURLRepository()
 	useCases := usecase.URLUseCases{
 		Create:      url.NewCreateURLUseCase(repo),
 		CreateBatch: url.NewBatchCreateURLUseCase(repo),
 		GetByURL:    url.NewGetByHashUseCase(repo),
 	}
-	return NewURLShortenerHandler(
-		testHost,
-		useCases,
-		validator.New(),
-		log,
-	)
+	return NewURLShortenerHandler(testHost, useCases, validator.New(), log)
 }
 
 func TestPost_Success(t *testing.T) {
@@ -242,4 +241,33 @@ func TestShortenBatch_422Error(t *testing.T) {
 	defer res.Body.Close()
 
 	assert.Equal(t, http.StatusUnprocessableEntity, res.StatusCode)
+}
+func TestShorten_409Error(t *testing.T) {
+	h := setupTest()
+	router := h.Routes()
+
+	existing := &model.URL{
+		OriginalURL: "https://hard2code.ru",
+		Hash:        "hash",
+	}
+	err := repo.Create(context.Background(), existing)
+	assert.NoError(t, err)
+
+	body := `{"url":"https://hard2code.ru"}`
+	req := httptest.NewRequest(http.MethodPost, "/api/shorten", bytes.NewBufferString(body))
+	req.Header.Set("Content-Type", "application/json")
+
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+	res := w.Result()
+	defer res.Body.Close()
+
+	assert.Equal(t, http.StatusConflict, res.StatusCode)
+	assert.Equal(t, "application/json", res.Header.Get("Content-Type"))
+
+	var resp dto.ShortURLResponse
+	err = json.NewDecoder(res.Body).Decode(&resp)
+	assert.NoError(t, err)
+
+	assert.Equal(t, h.baseURL+existing.Hash, resp.URL)
 }
