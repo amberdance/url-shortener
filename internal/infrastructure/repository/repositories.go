@@ -1,7 +1,6 @@
 package repository
 
 import (
-	"github.com/amberdance/url-shortener/internal/config"
 	"github.com/amberdance/url-shortener/internal/domain/repository"
 	"github.com/amberdance/url-shortener/internal/infrastructure/repository/url"
 	"github.com/amberdance/url-shortener/internal/infrastructure/storage"
@@ -19,13 +18,13 @@ func (r *repositories) URLRepository() repository.URLRepository {
 	return r.urlRepo
 }
 
-func NewRepositories(c *config.Config, s *storage.PostgresStorage) Provider {
-	if s != nil {
-		return &repositories{
-			urlRepo: url.NewPostgresRepository(s.Pool()),
-		}
-	}
-	return &repositories{
-		urlRepo: url.NewFileRepository(c.FileStoragePath),
-	}
+func NewRepositories(s *storage.PostgresStorage) Provider {
+	return &repositories{urlRepo: url.NewPostgresRepository(s.Pool())}
+}
+
+func NewFileRepositories(filePath string) Provider {
+	return &repositories{urlRepo: url.NewFileRepository(filePath)}
+}
+func NewMemoryRepositories() Provider {
+	return &repositories{urlRepo: url.NewInMemoryRepository()}
 }

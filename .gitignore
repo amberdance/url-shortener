@@ -20,5 +20,5 @@ vendor/
 api/
 
 cmd/test/*.go
-/db/
+/db/db.json
 /docker-compose.local.override.example.yml

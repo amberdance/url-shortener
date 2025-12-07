@@ -62,15 +62,28 @@ func (a *App) init() error {
 	a.config = config.GetConfig()
 	a.logger = logging.NewLogger()
 
-	st, err := storage.NewPostgresStorage(a.config.DatabaseDSN)
-	//if err != nil {
-	//	return fmt.Errorf("database connection error: %w", err)
-	//}
-	if err == nil {
-		a.storage = st
+	p, err := a.resolveRepositoryProvider()
+	if err != nil {
+		return err
 	}
 
-	a.container = buildContainer(repository.NewRepositories(a.config, a.storage))
-
+	a.container = buildContainer(p)
 	return nil
+}
+
+func (a *App) resolveRepositoryProvider() (repository.Provider, error) {
+	if a.config.DatabaseDSN != "" {
+		st, err := storage.NewPostgresStorage(a.config.DatabaseDSN)
+		if err != nil {
+			return nil, fmt.Errorf("database connection error: %w", err)
+		}
+		a.storage = st
+		return repository.NewRepositories(st), nil
+	}
+
+	if a.config.FileStoragePath != "" {
+		return repository.NewFileRepositories(a.config.FileStoragePath), nil
+	}
+
+	return repository.NewMemoryRepositories(), nil
 }

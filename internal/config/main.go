@@ -15,7 +15,7 @@ type Config struct {
 	Address         string `env:"SERVER_ADDRESS" env-default:"0.0.0.0:8080"`
 	BaseURL         string `env:"BASE_URL" env-default:""`
 	LogLevel        string `env:"LOG_LEVEL" env-default:"info"`
-	FileStoragePath string `env:"FILE_STORAGE_PATH" env-default:"./db/db.json"`
+	FileStoragePath string `env:"FILE_STORAGE_PATH"`
 	DatabaseDSN     string `env:"DATABASE_DSN"`
 }
 

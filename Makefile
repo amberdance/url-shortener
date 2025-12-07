@@ -25,3 +25,6 @@ build:
 run:
 	go build -o .bin/server cmd/shortener/main.go
 	.bin/server $(if $(address),-a $(address)) $(if $(host),-b $(host))
+
+migrate:
+	go build -o .bin/migrator cmd/migrator/main.go && .bin/migrator
