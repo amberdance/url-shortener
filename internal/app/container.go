@@ -3,10 +3,12 @@ package app
 import (
 	"github.com/amberdance/url-shortener/internal/app/usecase"
 	"github.com/amberdance/url-shortener/internal/app/usecase/url"
+	"github.com/go-playground/validator/v10"
 )
 
 type Container struct {
 	RepositoryProvider RepositoryProvider
+	Validator          *validator.Validate
 	UseCases           struct {
 		URL usecase.URLUseCases
 	}
@@ -15,6 +17,7 @@ type Container struct {
 func buildContainer(r RepositoryProvider) *Container {
 	return &Container{
 		RepositoryProvider: r,
+		Validator:          validator.New(),
 		UseCases: struct {
 			URL usecase.URLUseCases
 		}{

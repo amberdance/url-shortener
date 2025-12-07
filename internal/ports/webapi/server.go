@@ -84,13 +84,14 @@ func buildRoutes(a *app.App) *chi.Mux {
 	router.Mount("/health", handlers.NewHealthcheckHandler().Routes())
 
 	router.Group(func(r chi.Router) {
-		r.Use(webmw.TextPlainHeaderMiddleware)
-		r.Mount("/", handlers.NewURLShortenerHandler(a.Config().BaseURL, a.Container().UseCases.URL).Routes())
+		r.Use(webmw.JSONMiddleware)
+		r.Mount("/", handlers.NewURLShortenerHandler(
+			a.Config().BaseURL,
+			a.Container().UseCases.URL,
+			a.Container().Validator,
+			a.Logger()).Routes(),
+		)
 	})
-
-	//router.NotFound(func(w http.ResponseWriter, r *http.Request) {
-	//	http.Error(w, "404 page not found", http.StatusNotFound)
-	//})
 
 	return router
 }
