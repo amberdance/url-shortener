@@ -21,7 +21,7 @@ import (
 )
 
 const (
-	writeRequestTimeout = 5 * time.Second
+	writeRequestTimeout = 30 * time.Second
 	readRequestTimeout  = 10 * time.Second
 )
 
@@ -55,23 +55,26 @@ func (h *URLShortenerHandler) shorten(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(r.Context(), writeRequestTimeout)
 	defer cancel()
 
-	model, err := h.usecases.Create.Run(ctx, command.CreateURLEntryCommand{
+	m, err := h.usecases.Create.Run(ctx, command.CreateURLEntryCommand{
 		OriginalURL:   req.URL,
 		CorrelationID: req.CorrelationID,
 	})
+
+	w.Header().Set("Content-Type", "application/json")
+
 	if err != nil {
 		if errors.Is(err, context.DeadlineExceeded) {
 			w.WriteHeader(http.StatusGatewayTimeout)
 			return
 		}
+
 		helpers.HandleError(w, errs.ValidationError("Не удалось сформировать ссылку"))
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 
-	json.NewEncoder(w).Encode(dto.ShortURLResponse{URL: h.formatFullURL(model.Hash)})
+	json.NewEncoder(w).Encode(dto.ShortURLResponse{URL: h.formatFullURL(m.Hash)})
 }
 
 func (h *URLShortenerHandler) shortenBatch(w http.ResponseWriter, r *http.Request) {
@@ -111,7 +114,7 @@ func (h *URLShortenerHandler) shortenBatch(w http.ResponseWriter, r *http.Reques
 	for _, u := range urls {
 		res = append(res, dto.BatchShortenURLResponse{
 			CorrelationID: *u.CorrelationID,
-			URL:           u.OriginalURL + "/" + u.Hash,
+			URL:           h.formatFullURL(u.Hash),
 		})
 	}
 
@@ -144,7 +147,7 @@ func (h *URLShortenerHandler) get(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(r.Context(), readRequestTimeout)
 	defer cancel()
 
-	model, err := h.usecases.GetByURL.Run(ctx, command.GetURLByHashCommand{
+	m, err := h.usecases.GetByURL.Run(ctx, command.GetURLByHashCommand{
 		Hash: hash,
 	})
 
@@ -157,7 +160,7 @@ func (h *URLShortenerHandler) get(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Header().Set("Location", model.OriginalURL)
+	w.Header().Set("Location", m.OriginalURL)
 	w.WriteHeader(http.StatusTemporaryRedirect)
 }
 
@@ -176,18 +179,27 @@ func (h *URLShortenerHandler) deprecatedPost(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	model, err := h.usecases.Create.Run(r.Context(), command.CreateURLEntryCommand{
+	m, err := h.usecases.Create.Run(r.Context(), command.CreateURLEntryCommand{
 		OriginalURL: original,
 	})
+
+	w.Header().Set("Content-Type", "text/plain")
+
 	if err != nil {
+		var conflictErr errs.DuplicateEntryError
+		if errors.As(err, &conflictErr) {
+			w.WriteHeader(http.StatusConflict)
+			w.Write([]byte(h.formatFullURL(m.Hash)))
+			return
+		}
+
 		h.logger.Error(err.Error())
 		helpers.HandleError(w, errs.ValidationError("Не удалось сформировать ссылку"))
 		return
 	}
 
-	w.Header().Set("Content-Type", "text/plain")
 	w.WriteHeader(http.StatusCreated)
-	w.Write([]byte(h.formatFullURL(model.Hash)))
+	w.Write([]byte(h.formatFullURL(m.Hash)))
 }
 
 func (h *URLShortenerHandler) formatFullURL(hash string) string {
