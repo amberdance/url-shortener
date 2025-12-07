@@ -1,7 +1,7 @@
 package dto
 
 type ShortURLRequest struct {
-	CorrelationID *string `json:"correlation_id" validate:"correlation_id"`
+	CorrelationID *string `json:"correlation_id"`
 	URL           string  `json:"url" validate:"required,url"`
 }
 type ShortURLResponse struct {
@@ -14,6 +14,6 @@ type BatchShortenURLRequest struct {
 }
 
 type BatchShortenURLResponse struct {
-	CorrelationID string `json:"correlation_id" validate:"required"`
-	URL           string `json:"short_url" validate:"required,url"`
+	CorrelationID string `json:"correlation_id"`
+	URL           string `json:"short_url"`
 }
