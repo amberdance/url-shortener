@@ -68,12 +68,10 @@ func (h *URLShortenerHandler) shorten(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	shortURL := h.baseURL + model.Hash
-
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 
-	json.NewEncoder(w).Encode(dto.ShortURLResponse{URL: shortURL})
+	json.NewEncoder(w).Encode(dto.ShortURLResponse{URL: h.formatFullURL(model.Hash)})
 }
 
 func (h *URLShortenerHandler) shortenBatch(w http.ResponseWriter, r *http.Request) {
@@ -188,5 +186,9 @@ func (h *URLShortenerHandler) deprecatedPost(w http.ResponseWriter, r *http.Requ
 	}
 
 	w.WriteHeader(http.StatusCreated)
-	w.Write([]byte(h.baseURL + model.Hash))
+	w.Write([]byte(h.formatFullURL(model.Hash)))
+}
+
+func (h *URLShortenerHandler) formatFullURL(hash string) string {
+	return h.baseURL + hash
 }
