@@ -19,12 +19,12 @@ func (r *repositories) URLRepository() repository.URLRepository {
 }
 
 func NewRepositories(s *storage.PostgresStorage) Provider {
-	return &repositories{urlRepo: url.NewPostgresRepository(s.Pool())}
+	return &repositories{urlRepo: url.NewPostgresURLRepository(s.Pool())}
 }
 
 func NewFileRepositories(filePath string) Provider {
-	return &repositories{urlRepo: url.NewFileRepository(filePath)}
+	return &repositories{urlRepo: url.NewFileURLRepository(filePath)}
 }
 func NewMemoryRepositories() Provider {
-	return &repositories{urlRepo: url.NewInMemoryRepository()}
+	return &repositories{urlRepo: url.NewInMemoryURLRepository()}
 }

@@ -64,7 +64,7 @@ func TestGzipDecompressMiddleware_NoGzip(t *testing.T) {
 	w := httptest.NewRecorder()
 	GzipDecompressMiddleware(h).ServeHTTP(w, req)
 
-	// Result не вызывается → ok
+	// URL не вызывается → ok
 	assert.Equal(t, "plain text", received)
 }
 

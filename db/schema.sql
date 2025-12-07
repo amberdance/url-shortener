@@ -1,4 +1,4 @@
-\restrict Qeoonf5KZPEw7nDEtBXGPXmiR0inW1sg41yZd4hV3oqJag7ww64rAXYzBXBFhTv
+\restrict t5Nf6zKjMRwB71gKuUuyUUWN4i10ec9VwSyDnpCO6vKgQ3AF8lgaLc9DWnJp4NR
 
 -- Dumped from database version 17.6 (Debian 17.6-2.pgdg13+1)
 -- Dumped by pg_dump version 17.6 (Homebrew)
@@ -37,7 +37,8 @@ CREATE TABLE public.urls (
     hash character varying(255) NOT NULL,
     original_url text NOT NULL,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
-    updated_at timestamp with time zone
+    updated_at timestamp with time zone,
+    correlation_id character varying(255)
 );
 
 
@@ -47,6 +48,14 @@ CREATE TABLE public.urls (
 
 ALTER TABLE ONLY public.schema_migrations
     ADD CONSTRAINT schema_migrations_pkey PRIMARY KEY (version);
+
+
+--
+-- Name: urls urls_correlation_id_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.urls
+    ADD CONSTRAINT urls_correlation_id_key UNIQUE (correlation_id);
 
 
 --
@@ -69,7 +78,7 @@ ALTER TABLE ONLY public.urls
 -- PostgreSQL database dump complete
 --
 
-\unrestrict Qeoonf5KZPEw7nDEtBXGPXmiR0inW1sg41yZd4hV3oqJag7ww64rAXYzBXBFhTv
+\unrestrict t5Nf6zKjMRwB71gKuUuyUUWN4i10ec9VwSyDnpCO6vKgQ3AF8lgaLc9DWnJp4NR
 
 
 --

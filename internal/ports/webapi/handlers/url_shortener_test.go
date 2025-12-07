@@ -32,10 +32,11 @@ func (m MockLogger) Close() error             { return nil }
 func setupTest() *URLShortenerHandler {
 	var log shared.Logger = MockLogger{}
 
-	repo := infr.NewInMemoryRepository()
+	repo := infr.NewInMemoryURLRepository()
 	useCases := usecase.URLUseCases{
-		Create:   url.NewCreateURLUseCase(repo),
-		GetByURL: url.NewGetByHashUseCase(repo),
+		Create:      url.NewCreateURLUseCase(repo),
+		CreateBatch: url.NewBatchCreateURLUseCase(repo),
+		GetByURL:    url.NewGetByHashUseCase(repo),
 	}
 	return NewURLShortenerHandler(
 		testHost,
@@ -132,7 +133,7 @@ func TestGet_NotFound(t *testing.T) {
 	}
 }
 
-func TestShortenJSON_Success(t *testing.T) {
+func TestShorten_Success(t *testing.T) {
 	h := setupTest()
 	router := h.Routes()
 
@@ -181,4 +182,64 @@ func TestShortenJSON_BadRequest(t *testing.T) {
 			assert.Equal(t, http.StatusBadRequest, res.StatusCode)
 		})
 	}
+}
+
+func TestShortenBatch_Success(t *testing.T) {
+	h := setupTest()
+	router := h.Routes()
+
+	body := `[
+			{
+				"original_url": "https://google.com",
+				"correlation_id": "11111111-1111-1111-1111-111111111111"
+			},
+			{
+				"original_url": "https://hard2code.ru",
+				"correlation_id": "22222222-2222-2222-2222-222222222222"
+			}
+		]`
+
+	req := httptest.NewRequest(http.MethodPost, "/api/shorten/batch", bytes.NewBufferString(body))
+	req.Header.Set("Content-Type", "application/json")
+
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+	res := w.Result()
+	defer res.Body.Close()
+
+	assert.Equal(t, http.StatusCreated, res.StatusCode)
+	assert.Equal(t, "application/json", res.Header.Get("Content-Type"))
+
+	var resp []dto.BatchShortenURLResponse
+	err := json.NewDecoder(res.Body).Decode(&resp)
+	assert.NoError(t, err)
+
+	assert.Len(t, resp, 2)
+
+	var dtos []dto.BatchShortenURLRequest
+	json.NewDecoder(res.Body).Decode(&dtos)
+
+	for i := range dtos {
+		assert.Equal(t, dtos[i], resp[0].CorrelationID)
+		assert.NotEmpty(t, resp[0].URL)
+	}
+}
+
+func TestShortenBatch_422Error(t *testing.T) {
+	h := setupTest()
+	router := h.Routes()
+
+	body := `[
+			
+		]`
+
+	req := httptest.NewRequest(http.MethodPost, "/api/shorten/batch", bytes.NewBufferString(body))
+	req.Header.Set("Content-Type", "application/json")
+
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+	res := w.Result()
+	defer res.Body.Close()
+
+	assert.Equal(t, http.StatusUnprocessableEntity, res.StatusCode)
 }

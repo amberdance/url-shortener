@@ -19,12 +19,12 @@ func NewCreateURLUseCase(r repository.URLRepository) CreateUseCase {
 
 func (uc CreateUseCase) Run(ctx context.Context, cmd command.CreateURLEntryCommand) (*model.URL, error) {
 	// @TODO:
-	//exists, err := uc.repository.FindByUrl(cmd.OriginalURL)
+	//exists, err := uc.repository.FindByUrl(cmd.URLs)
 	//if exists != nil {
 	//	return exists
 	//}
 
-	m, err := model.NewURL(cmd.OriginalURL, helpers.GenerateHash())
+	m, err := model.NewURL(cmd.OriginalURL, helpers.GenerateHash(), cmd.CorrelationID)
 	if err != nil {
 		return nil, err
 	}
