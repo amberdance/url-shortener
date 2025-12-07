@@ -267,6 +267,7 @@ func TestShorten_409Error(t *testing.T) {
 	assert.Equal(t, http.StatusConflict, res.StatusCode)
 	assert.Equal(t, "application/json", res.Header.Get("Content-Type"))
 
-	b, _ := io.ReadAll(res.Body)
-	assert.Equal(t, h.baseURL+existing.Hash, string(b))
+	var resp dto.ShortURLResponse
+	err = json.NewDecoder(res.Body).Decode(&resp)
+	assert.Equal(t, h.baseURL+existing.Hash, resp.URL)
 }

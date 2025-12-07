@@ -12,7 +12,6 @@ import (
 	"github.com/amberdance/url-shortener/internal/app/command"
 	"github.com/amberdance/url-shortener/internal/app/usecase"
 	"github.com/amberdance/url-shortener/internal/domain/errs"
-	"github.com/amberdance/url-shortener/internal/domain/model"
 	"github.com/amberdance/url-shortener/internal/domain/shared"
 	"github.com/amberdance/url-shortener/internal/ports/webapi/dto"
 	"github.com/amberdance/url-shortener/internal/ports/webapi/helpers"
@@ -71,7 +70,8 @@ func (h *URLShortenerHandler) shorten(w http.ResponseWriter, r *http.Request) {
 
 		var conflictErr errs.DuplicateEntryError
 		if errors.As(err, &conflictErr) {
-			h.handleDuplicateEntryError(w, m)
+			w.WriteHeader(http.StatusConflict)
+			json.NewEncoder(w).Encode(dto.ShortURLResponse{URL: h.formatFullURL(m.Hash)})
 			return
 		}
 
@@ -190,12 +190,13 @@ func (h *URLShortenerHandler) deprecatedPost(w http.ResponseWriter, r *http.Requ
 		OriginalURL: original,
 	})
 
-	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Content-Type", "text/plain")
 
 	if err != nil {
 		var conflictErr errs.DuplicateEntryError
 		if errors.As(err, &conflictErr) {
-			h.handleDuplicateEntryError(w, m)
+			w.WriteHeader(http.StatusConflict)
+			w.Write([]byte(h.formatFullURL(m.Hash)))
 			return
 		}
 
@@ -205,14 +206,9 @@ func (h *URLShortenerHandler) deprecatedPost(w http.ResponseWriter, r *http.Requ
 	}
 
 	w.WriteHeader(http.StatusCreated)
-	w.Write([]byte(h.baseURL + m.Hash))
+	w.Write([]byte(h.formatFullURL(m.Hash)))
 }
 
 func (h *URLShortenerHandler) formatFullURL(hash string) string {
 	return h.baseURL + hash
-}
-
-func (h *URLShortenerHandler) handleDuplicateEntryError(w http.ResponseWriter, m *model.URL) {
-	w.WriteHeader(http.StatusConflict)
-	w.Write([]byte(h.formatFullURL(m.Hash)))
 }
