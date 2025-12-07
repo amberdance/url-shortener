@@ -68,7 +68,7 @@ func (a *App) init() error {
 	}
 
 	a.storage = st
-	a.container = buildContainer(repository.NewRepositories(a.storage))
+	a.container = buildContainer(repository.NewRepositories(a.config, a.storage))
 
 	return nil
 }
