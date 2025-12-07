@@ -12,22 +12,22 @@ import (
 )
 
 type Logger struct {
-	file       *os.File
-	termLogger *slog.Logger
-	fileLogger *slog.Logger
+	file *os.File
+	logs []*slog.Logger
 }
 
 var _ shared.Logger = (*Logger)(nil)
 
 func NewLogger() *Logger {
 	cfg := config.GetConfig()
+
 	f, err := os.OpenFile("./logs/app.log", os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0666)
 	if err != nil {
 		log.Fatalln(err)
 	}
+	defer f.Close()
 
 	level := slog.LevelDebug
-
 	switch cfg.LogLevel {
 	case "info":
 		level = slog.LevelInfo
@@ -35,22 +35,17 @@ func NewLogger() *Logger {
 		level = slog.LevelError
 	}
 
-	fileHandler := tint.NewHandler(f, &tint.Options{
-		Level:      level,
-		TimeFormat: time.DateTime,
-		NoColor:    true,
-	})
-
-	stdoutHandler := tint.NewHandler(os.Stdout, &tint.Options{
-		Level:      level,
-		TimeFormat: time.DateTime,
-		NoColor:    false,
-	})
+	opts := &tint.Options{Level: level, TimeFormat: time.DateTime}
 
 	return &Logger{
-		file:       f,
-		fileLogger: slog.New(fileHandler),
-		termLogger: slog.New(stdoutHandler),
+		file: f,
+		logs: []*slog.Logger{
+			slog.New(tint.NewHandler(os.Stdout, opts)),
+			slog.New(tint.NewHandler(f, &tint.Options{
+				Level:      level,
+				TimeFormat: time.DateTime,
+			})),
+		},
 	}
 }
 
@@ -61,32 +56,12 @@ func (l *Logger) Close() error {
 	return nil
 }
 
-func (l *Logger) Info(msg string, args ...any) {
-	if len(args) > 0 {
-		l.fileLogger.Info(msg, args...)
-		l.termLogger.Info(msg, args...)
-	} else {
-		l.fileLogger.Info(msg)
-		l.termLogger.Info(msg)
+func (l *Logger) log(fn func(*slog.Logger, string, ...any), msg string, args ...any) {
+	for _, lg := range l.logs {
+		fn(lg, msg, args...)
 	}
 }
 
-func (l *Logger) Debug(msg string, args ...any) {
-	if len(args) > 0 {
-		l.fileLogger.Debug(msg, args...)
-		l.termLogger.Debug(msg, args...)
-	} else {
-		l.fileLogger.Debug(msg)
-		l.termLogger.Debug(msg)
-	}
-}
-
-func (l *Logger) Error(msg string, args ...any) {
-	if len(args) > 0 {
-		l.fileLogger.Error(msg, args...)
-		l.termLogger.Error(msg, args...)
-	} else {
-		l.fileLogger.Error(msg)
-		l.termLogger.Error(msg)
-	}
-}
+func (l *Logger) Info(msg string, args ...any)  { l.log((*slog.Logger).Info, msg, args...) }
+func (l *Logger) Debug(msg string, args ...any) { l.log((*slog.Logger).Debug, msg, args...) }
+func (l *Logger) Error(msg string, args ...any) { l.log((*slog.Logger).Error, msg, args...) }
