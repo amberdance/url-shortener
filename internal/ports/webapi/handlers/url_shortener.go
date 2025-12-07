@@ -1,10 +1,13 @@
 package handlers
 
 import (
+	"context"
 	"encoding/json"
+	"errors"
 	"io"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/amberdance/url-shortener/internal/app/command"
 	"github.com/amberdance/url-shortener/internal/app/usecase"
@@ -15,6 +18,11 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-playground/validator/v10"
+)
+
+const (
+	writeRequestTimeout = 5 * time.Second
+	readRequestTimeout  = 10 * time.Second
 )
 
 type URLShortenerHandler struct {
@@ -32,13 +40,69 @@ func (h *URLShortenerHandler) Routes() chi.Router {
 	r := chi.NewRouter()
 	r.Use(middleware.Recoverer)
 
-	r.Post("/", h.post)
+	r.Post("/", h.deprecatedPost)
 	r.Get("/{hash:[a-zA-Z0-9]+}", h.get)
 	r.Post("/api/shorten", h.shortenJSON)
 	return r
 }
 
-func (h *URLShortenerHandler) post(w http.ResponseWriter, r *http.Request) {
+func (h *URLShortenerHandler) shortenJSON(w http.ResponseWriter, r *http.Request) {
+	var req dto.ShortURLRequest
+	_ = json.NewDecoder(r.Body).Decode(&req)
+	helpers.MustValidate(w, h.validator, req)
+
+	ctx, cancel := context.WithTimeout(r.Context(), writeRequestTimeout)
+	defer cancel()
+
+	model, err := h.usecases.Create.Run(ctx, command.CreateURLEntryCommand{
+		OriginalURL: req.URL,
+	})
+	if err != nil {
+		if errors.Is(err, context.DeadlineExceeded) {
+			w.WriteHeader(http.StatusGatewayTimeout)
+			return
+		}
+		helpers.HandleError(w, errs.ValidationError("Не удалось сформировать ссылку"))
+		return
+	}
+
+	shortURL := h.baseURL + model.Hash
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+
+	json.NewEncoder(w).Encode(dto.ShortURLResponse{Result: shortURL})
+}
+
+func (h *URLShortenerHandler) get(w http.ResponseWriter, r *http.Request) {
+	hash := chi.URLParam(r, "hash")
+	if hash == "" {
+		helpers.HandleError(w, errs.ValidationError("Не передана ссылка"))
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(r.Context(), readRequestTimeout)
+	defer cancel()
+
+	model, err := h.usecases.GetByURL.Run(ctx, command.GetURLByHashCommand{
+		Hash: hash,
+	})
+
+	if err != nil {
+		if errors.Is(err, context.DeadlineExceeded) {
+			w.WriteHeader(http.StatusGatewayTimeout)
+			return
+		}
+		helpers.HandleError(w, errs.NotFoundError("Не найден ресурс"))
+		return
+	}
+
+	w.Header().Set("Location", model.OriginalURL)
+	w.WriteHeader(http.StatusTemporaryRedirect)
+}
+
+// @TODO: удалить
+func (h *URLShortenerHandler) deprecatedPost(w http.ResponseWriter, r *http.Request) {
 	body, err := io.ReadAll(r.Body)
 	defer r.Body.Close()
 	if err != nil || len(body) == 0 {
@@ -63,44 +127,4 @@ func (h *URLShortenerHandler) post(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusCreated)
 	w.Write([]byte(h.baseURL + model.Hash))
-}
-
-func (h *URLShortenerHandler) get(w http.ResponseWriter, r *http.Request) {
-	hash := chi.URLParam(r, "hash")
-	if hash == "" {
-		helpers.HandleError(w, errs.ValidationError("Не передана ссылка"))
-		return
-	}
-
-	model, err := h.usecases.GetByURL.Run(r.Context(), command.GetURLByHashCommand{
-		Hash: hash,
-	})
-	if err != nil {
-		helpers.HandleError(w, errs.NotFoundError("Не найден ресурс"))
-		return
-	}
-
-	w.Header().Set("Location", model.OriginalURL)
-	w.WriteHeader(http.StatusTemporaryRedirect)
-}
-
-func (h *URLShortenerHandler) shortenJSON(w http.ResponseWriter, r *http.Request) {
-	var req dto.ShortURLRequest
-	_ = json.NewDecoder(r.Body).Decode(&req)
-	helpers.MustValidate(w, h.validator, req)
-
-	model, err := h.usecases.Create.Run(r.Context(), command.CreateURLEntryCommand{
-		OriginalURL: req.URL,
-	})
-	if err != nil {
-		helpers.HandleError(w, errs.ValidationError("Не удалось сформировать ссылку"))
-		return
-	}
-
-	shortURL := h.baseURL + model.Hash
-
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusCreated)
-
-	json.NewEncoder(w).Encode(dto.ShortURLResponse{Result: shortURL})
 }
