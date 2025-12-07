@@ -41,10 +41,8 @@ func NewFileURLRepository(path string) repository.URLRepository {
 }
 
 func (r *FileRepository) Create(ctx context.Context, u *model.URL) error {
-	existing, err := r.FindByOriginalURL(ctx, u.OriginalURL)
-	if err == nil {
-		u.Hash = existing.Hash
-		u.ID = existing.ID
+	existing, _ := r.FindByOriginalURL(ctx, u.OriginalURL)
+	if existing != nil {
 		return errs.DuplicateEntryError("url already exists")
 	}
 

@@ -60,7 +60,6 @@ func (h *URLShortenerHandler) shorten(w http.ResponseWriter, r *http.Request) {
 		OriginalURL:   req.URL,
 		CorrelationID: req.CorrelationID,
 	})
-	w.Header().Set("Content-Type", "application/json")
 
 	if err != nil {
 		if errors.Is(err, context.DeadlineExceeded) {
@@ -79,6 +78,7 @@ func (h *URLShortenerHandler) shorten(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusCreated)
+	w.Header().Set("Content-Type", "application/json")
 
 	json.NewEncoder(w).Encode(dto.ShortURLResponse{URL: h.formatFullURL(m.Hash)})
 }
@@ -106,8 +106,6 @@ func (h *URLShortenerHandler) shortenBatch(w http.ResponseWriter, r *http.Reques
 	urls, err := h.usecases.CreateBatch.Run(ctx, cmd)
 	defer cancel()
 
-	w.Header().Set("Content-Type", "application/json")
-
 	if err != nil {
 		if errors.Is(err, context.DeadlineExceeded) {
 			w.WriteHeader(http.StatusGatewayTimeout)
@@ -126,6 +124,7 @@ func (h *URLShortenerHandler) shortenBatch(w http.ResponseWriter, r *http.Reques
 		})
 	}
 
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 	_ = json.NewEncoder(w).Encode(res)
 }
@@ -211,6 +210,7 @@ func (h *URLShortenerHandler) formatFullURL(hash string) string {
 }
 
 func (h *URLShortenerHandler) handleDuplicateEntryError(w http.ResponseWriter, m *model.URL) {
+	w.Header().Set("Content-Type", "text/plain")
 	w.WriteHeader(http.StatusConflict)
-	_ = json.NewEncoder(w).Encode(dto.ShortURLResponse{URL: h.formatFullURL(m.Hash)})
+	w.Write([]byte(h.formatFullURL(m.Hash)))
 }
