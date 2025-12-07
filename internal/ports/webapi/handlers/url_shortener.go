@@ -90,7 +90,7 @@ func (h *URLShortenerHandler) shortenBatch(w http.ResponseWriter, r *http.Reques
 
 	for _, d := range reqDto {
 		cmd.Entries = append(cmd.Entries, command.CreateURLEntryCommand{
-			OriginalURL:   d.OriginalURL,
+			OriginalURL:   d.URL,
 			CorrelationID: &d.CorrelationID,
 		})
 	}

@@ -17,7 +17,7 @@ type URL struct {
 	UpdatedAt     *time.Time
 }
 
-func NewURL(original string, hash string, correlationId *string) (*URL, error) {
+func NewURL(original string, hash string, correlationID *string) (*URL, error) {
 	original = strings.TrimSpace(original)
 	hash = strings.TrimSpace(hash)
 
@@ -32,7 +32,7 @@ func NewURL(original string, hash string, correlationId *string) (*URL, error) {
 		ID:            uuid.Must(uuid.NewV7()),
 		OriginalURL:   original,
 		Hash:          hash,
-		CorrelationID: correlationId,
+		CorrelationID: correlationID,
 		CreatedAt:     time.Now(),
 	}, nil
 }
