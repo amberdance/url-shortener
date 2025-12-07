@@ -54,7 +54,7 @@ func (a *App) Close() {
 func (a *App) init() error {
 	a.config = config.GetConfig()
 	a.logger = logging.NewLogger()
-	a.container = buildContainer(infr.NewRepositories())
+	a.container = buildContainer(infr.NewRepositories(a.config))
 
 	return nil
 }

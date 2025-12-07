@@ -12,9 +12,10 @@ import (
 )
 
 type Config struct {
-	Address  string `env:"SERVER_ADDRESS" env-default:"0.0.0.0:8080"`
-	BaseURL  string `env:"BASE_URL" env-default:""`
-	LogLevel string `env:"LOG_LEVEL" env-default:"info"`
+	Address         string `env:"SERVER_ADDRESS" env-default:"0.0.0.0:8080"`
+	BaseURL         string `env:"BASE_URL" env-default:""`
+	LogLevel        string `env:"LOG_LEVEL" env-default:"info"`
+	FileStoragePath string `env:"FILE_STORAGE_PATH" env-default:"./db/db.json"`
 }
 
 var (
@@ -36,6 +37,7 @@ func GetConfig() *Config {
 
 		address := flag.String("a", "", "Адрес запуска HTTP-сервера (например, localhost:8080)")
 		baseURL := flag.String("b", "", "Базовый адрес коротких ссылок (например, http://localhost:8080)")
+		fileStoragePath := flag.String("f", "", "Путь к файловому хранилищу")
 		flag.Parse()
 
 		if *address != "" {
@@ -54,6 +56,10 @@ func GetConfig() *Config {
 		}
 
 		cfg.BaseURL = strings.TrimRight(cfg.BaseURL, "/") + "/"
+
+		if *fileStoragePath != "" {
+			cfg.FileStoragePath = *fileStoragePath
+		}
 	})
 
 	return cfg
