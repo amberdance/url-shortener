@@ -8,7 +8,7 @@ up:
 	docker compose -f docker-compose.local.yml -f docker-compose.local.override.yml up -d
 
 down:
-	docker compose down
+	docker compose -f docker-compose.local.yml -f docker-compose.local.override.yml down
 
 log:
 	docker compose logs -f
