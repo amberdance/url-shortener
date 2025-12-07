@@ -243,6 +243,7 @@ func TestShortenBatch_422Error(t *testing.T) {
 
 	assert.Equal(t, http.StatusUnprocessableEntity, res.StatusCode)
 }
+
 func TestShorten_409Error(t *testing.T) {
 	h := setupTest()
 	router := h.Routes()
@@ -264,7 +265,7 @@ func TestShorten_409Error(t *testing.T) {
 	defer res.Body.Close()
 
 	assert.Equal(t, http.StatusConflict, res.StatusCode)
-	assert.Equal(t, "text/plain", res.Header.Get("Content-Type"))
+	assert.Equal(t, "application/json", res.Header.Get("Content-Type"))
 
 	b, _ := io.ReadAll(res.Body)
 	assert.Equal(t, h.baseURL+existing.Hash, string(b))

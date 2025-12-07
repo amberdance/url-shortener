@@ -61,6 +61,8 @@ func (h *URLShortenerHandler) shorten(w http.ResponseWriter, r *http.Request) {
 		CorrelationID: req.CorrelationID,
 	})
 
+	w.Header().Set("Content-Type", "application/json")
+
 	if err != nil {
 		if errors.Is(err, context.DeadlineExceeded) {
 			w.WriteHeader(http.StatusGatewayTimeout)
@@ -77,7 +79,6 @@ func (h *URLShortenerHandler) shorten(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 
 	json.NewEncoder(w).Encode(dto.ShortURLResponse{URL: h.formatFullURL(m.Hash)})
@@ -189,6 +190,8 @@ func (h *URLShortenerHandler) deprecatedPost(w http.ResponseWriter, r *http.Requ
 		OriginalURL: original,
 	})
 
+	w.Header().Set("Content-Type", "application/json")
+
 	if err != nil {
 		var conflictErr errs.DuplicateEntryError
 		if errors.As(err, &conflictErr) {
@@ -210,7 +213,6 @@ func (h *URLShortenerHandler) formatFullURL(hash string) string {
 }
 
 func (h *URLShortenerHandler) handleDuplicateEntryError(w http.ResponseWriter, m *model.URL) {
-	w.Header().Set("Content-Type", "text/plain")
 	w.WriteHeader(http.StatusConflict)
 	w.Write([]byte(h.formatFullURL(m.Hash)))
 }
