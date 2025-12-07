@@ -113,7 +113,7 @@ func (h *URLShortenerHandler) shortenBatch(w http.ResponseWriter, r *http.Reques
 	for _, u := range urls {
 		res = append(res, dto.BatchShortenURLResponse{
 			CorrelationID: *u.CorrelationID,
-			URL:           u.Hash,
+			URL:           u.OriginalURL + "/" + u.Hash,
 		})
 	}
 
