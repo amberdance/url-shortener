@@ -5,7 +5,7 @@ type ShortURLRequest struct {
 	URL           string  `json:"url" validate:"required,url"`
 }
 type ShortURLResponse struct {
-	URL string `json:"url"`
+	URL string `json:"result"`
 }
 
 type BatchShortenURLRequest struct {
