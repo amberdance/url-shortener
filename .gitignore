@@ -21,3 +21,4 @@ api/
 
 cmd/test/*.go
 /db/
+/docker-compose.local.override.example.yml
