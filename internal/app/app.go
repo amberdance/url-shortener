@@ -62,12 +62,12 @@ func (a *App) init() error {
 	a.config = config.GetConfig()
 	a.logger = logging.NewLogger()
 
-	st, err := storage.NewPostgresStorage(a.config.DatabaseDSN)
-	if err != nil {
-		return fmt.Errorf("database connection error: %w", err)
-	}
+	//st, err := storage.NewPostgresStorage(a.config.DatabaseDSN)
+	//if err != nil {
+	//	return fmt.Errorf("database connection error: %w", err)
+	//}
 
-	a.storage = st
+	//a.storage = st
 	a.container = buildContainer(repository.NewRepositories(a.config, a.storage))
 
 	return nil
