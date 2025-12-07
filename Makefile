@@ -4,18 +4,6 @@ TEST_PATH=./internal/...
 address ?=
 host ?=
 
-up:
-	docker compose -f docker-compose.local.yml -f docker-compose.local.override.yml up -d
-
-down:
-	docker compose down
-
-log:
-	docker compose logs -f
-
-status:
-	docker compose ps
-
 test:
 	go test $(TEST_PATH) $(TEST_FLAGS)
 

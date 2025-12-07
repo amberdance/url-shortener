@@ -16,7 +16,6 @@ type Config struct {
 	BaseURL         string `env:"BASE_URL" env-default:""`
 	LogLevel        string `env:"LOG_LEVEL" env-default:"info"`
 	FileStoragePath string `env:"FILE_STORAGE_PATH" env-default:"./db/db.json"`
-	DatabaseDSN     string `env:"DATABASE_DSN"`
 }
 
 var (
@@ -60,11 +59,6 @@ func GetConfig() *Config {
 
 		if *fileStoragePath != "" {
 			cfg.FileStoragePath = *fileStoragePath
-		}
-
-		dsn := flag.String("d", "", "PostgreSQL DSN")
-		if *dsn != "" {
-			cfg.DatabaseDSN = *dsn
 		}
 	})
 

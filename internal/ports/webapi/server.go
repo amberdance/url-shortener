@@ -82,7 +82,6 @@ func buildRoutes(a *app.App) *chi.Mux {
 	router.Use(middleware.Recoverer)
 
 	router.Mount("/health", handlers.NewHealthcheckHandler().Routes())
-	router.Mount("/ping", handlers.NewPingHandler(a.Storage()).Routes())
 
 	router.Group(func(r chi.Router) {
 		r.Use(webmw.JSONMiddleware)

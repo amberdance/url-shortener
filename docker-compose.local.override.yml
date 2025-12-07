@@ -1,8 +1,0 @@
-services:
-  db:
-    environment:
-      POSTGRES_USER: user
-      POSTGRES_PASSWORD: pass
-      POSTGRES_DB: db
-    ports:
-      - "5432:5432"
