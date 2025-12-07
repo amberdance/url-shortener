@@ -31,14 +31,14 @@ func GetConfig() *Config {
 		if err := godotenv.Load(); err != nil {
 			log.Println("не найден файл .env, используются переменные окружения")
 		}
-
 		if err := cleanenv.ReadEnv(cfg); err != nil {
 			log.Fatalln(err)
 		}
 
 		address := flag.String("a", "", "Адрес запуска HTTP-сервера (например, localhost:8080)")
 		baseURL := flag.String("b", "", "Базовый адрес коротких ссылок (например, http://localhost:8080)")
-		fileStoragePath := flag.String("f", "", "Путь к файловому хранилищу")
+		dbFilePath := flag.String("f", "", "Путь к файловому хранилищу")
+		dsn := flag.String("d", "", "PostgreSQL DSN")
 		flag.Parse()
 
 		if *address != "" {
@@ -58,11 +58,10 @@ func GetConfig() *Config {
 
 		cfg.BaseURL = strings.TrimRight(cfg.BaseURL, "/") + "/"
 
-		if *fileStoragePath != "" {
-			cfg.FileStoragePath = *fileStoragePath
+		if *dbFilePath != "" {
+			cfg.FileStoragePath = *dbFilePath
 		}
 
-		dsn := flag.String("d", "", "PostgreSQL DSN")
 		if *dsn != "" {
 			cfg.DatabaseDSN = *dsn
 		}
