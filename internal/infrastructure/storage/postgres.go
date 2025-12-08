@@ -2,10 +2,8 @@ package storage
 
 import (
 	"context"
-	"net/url"
 	"time"
 
-	"github.com/amacneil/dbmate/v2/pkg/dbmate"
 	_ "github.com/amacneil/dbmate/v2/pkg/driver/postgres"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -28,10 +26,6 @@ func (s *PostgresStorage) Close() {
 }
 
 func NewPostgresStorage(dsn string) (*PostgresStorage, error) {
-	if err := migrate(dsn); err != nil {
-		return nil, err
-	}
-
 	cfg, err := pgxpool.ParseConfig(dsn)
 	if err != nil {
 		return nil, err
@@ -51,11 +45,4 @@ func NewPostgresStorage(dsn string) (*PostgresStorage, error) {
 	}
 
 	return &PostgresStorage{dsn: dsn, pool: pool}, nil
-}
-
-func migrate(dsn string) error {
-	u, _ := url.Parse(dsn)
-	db := dbmate.New(u)
-
-	return db.Migrate()
 }

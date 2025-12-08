@@ -2,8 +2,10 @@ package app
 
 import (
 	"fmt"
+	"net/url"
 	"sync"
 
+	"github.com/amacneil/dbmate/v2/pkg/dbmate"
 	"github.com/amberdance/url-shortener/internal/config"
 	"github.com/amberdance/url-shortener/internal/domain/shared"
 	"github.com/amberdance/url-shortener/internal/infrastructure/logging"
@@ -73,6 +75,11 @@ func (a *App) init() error {
 
 func (a *App) resolveRepositoryProvider() (repository.Provider, error) {
 	if a.config.DatabaseDSN != "" {
+		err := migrateDb(a.config.DatabaseDSN)
+		if err != nil {
+			return nil, fmt.Errorf("failed to migrate database: %w", err)
+		}
+
 		st, err := storage.NewPostgresStorage(a.config.DatabaseDSN)
 		if err != nil {
 			return nil, fmt.Errorf("database connection error: %w", err)
@@ -86,4 +93,13 @@ func (a *App) resolveRepositoryProvider() (repository.Provider, error) {
 	}
 
 	return repository.NewMemoryRepositories(), nil
+}
+
+func migrateDb(dsn string) error {
+	u, err := url.Parse(dsn)
+	if err != nil {
+		return err
+	}
+
+	return dbmate.New(u).Migrate()
 }
