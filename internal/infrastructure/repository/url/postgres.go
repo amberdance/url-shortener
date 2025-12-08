@@ -58,13 +58,17 @@ func (r *PostgresRepository) CreateBatch(ctx context.Context, urls []*model.URL)
 	}
 
 	br := tx.SendBatch(ctx, batch)
-	defer br.Close()
 
-	for range urls {
-		_, err = br.Exec()
-		if err != nil {
-			return fmt.Errorf("batch insert failed: %w", err)
+	for i := 0; i < len(urls); i++ {
+		_, execErr := br.Exec()
+		if execErr != nil {
+			br.Close()
+			return fmt.Errorf("batch insert failed: %w", execErr)
 		}
+	}
+
+	if closeErr := br.Close(); closeErr != nil {
+		return fmt.Errorf("batch close failed: %w", closeErr)
 	}
 
 	if err = tx.Commit(ctx); err != nil {
