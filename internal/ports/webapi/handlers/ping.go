@@ -3,22 +3,22 @@ package handlers
 import (
 	"net/http"
 
-	"github.com/amberdance/url-shortener/internal/infrastructure/storage"
+	"github.com/amberdance/url-shortener/internal/domain/contracts"
 	"github.com/go-chi/chi/v5"
 )
 
 type PingHandler struct {
-	storage *storage.PostgresStorage
+	pinger contracts.Pinger
 }
 
-func NewPingHandler(s *storage.PostgresStorage) *PingHandler {
-	return &PingHandler{storage: s}
+func NewPingHandler(s contracts.Pinger) *PingHandler {
+	return &PingHandler{pinger: s}
 }
 
 func (h *PingHandler) Routes() chi.Router {
 	r := chi.NewRouter()
 	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
-		if err := h.storage.Ping(r.Context()); err != nil {
+		if err := h.pinger.Ping(r.Context()); err != nil {
 			http.Error(w, "db not available", http.StatusInternalServerError)
 			return
 		}
