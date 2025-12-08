@@ -7,6 +7,7 @@ import (
 
 	"github.com/amacneil/dbmate/v2/pkg/dbmate"
 	"github.com/amberdance/url-shortener/internal/config"
+	"github.com/amberdance/url-shortener/internal/domain/contracts"
 	"github.com/amberdance/url-shortener/internal/domain/shared"
 	"github.com/amberdance/url-shortener/internal/infrastructure/logging"
 	"github.com/amberdance/url-shortener/internal/infrastructure/repository"
@@ -18,6 +19,7 @@ type App struct {
 	container *Container
 	logger    shared.Logger
 	storage   *storage.PostgresStorage
+	pinger    contracts.Pinger
 }
 
 var (
@@ -50,6 +52,8 @@ func (a *App) Container() *Container { return a.container }
 func (a *App) Logger() shared.Logger { return a.logger }
 
 func (a *App) Storage() *storage.PostgresStorage { return a.storage }
+
+func (a *App) Pinger() contracts.Pinger { return a.pinger }
 
 func (a *App) Close() {
 	if a.logger != nil {
@@ -85,14 +89,20 @@ func (a *App) resolveRepositoryProvider() (repository.Provider, error) {
 			return nil, fmt.Errorf("database connection error: %w", err)
 		}
 		a.storage = st
+		a.pinger = st
 		return repository.NewRepositories(st), nil
 	}
 
 	if a.config.FileStoragePath != "" {
-		return repository.NewFileRepositories(a.config.FileStoragePath), nil
+		st := storage.NewFileStorage(a.config.FileStoragePath)
+		a.pinger = st
+		return repository.NewFileRepositories(st), nil
 	}
 
-	return repository.NewMemoryRepositories(), nil
+	st := storage.NewInMemoryStorage()
+	a.pinger = st
+
+	return repository.NewMemoryRepositories(st), nil
 }
 
 func migrateDb(dsn string) error {

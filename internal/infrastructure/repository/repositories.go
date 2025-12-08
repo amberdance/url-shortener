@@ -22,9 +22,10 @@ func NewRepositories(s *storage.PostgresStorage) Provider {
 	return &repositories{urlRepo: url.NewPostgresURLRepository(s.Pool())}
 }
 
-func NewFileRepositories(filePath string) Provider {
-	return &repositories{urlRepo: url.NewFileURLRepository(filePath)}
+func NewFileRepositories(s *storage.FileStorage) Provider {
+	return &repositories{urlRepo: url.NewFileURLRepository(s)}
 }
-func NewMemoryRepositories() Provider {
-	return &repositories{urlRepo: url.NewInMemoryURLRepository()}
+
+func NewMemoryRepositories(s *storage.InMemoryStorage) Provider {
+	return &repositories{urlRepo: url.NewInMemoryURLRepository(s)}
 }

@@ -14,9 +14,9 @@ type FileRepository struct {
 	storage *storage.FileStorage
 }
 
-func NewFileURLRepository(path string) repository.URLRepository {
+func NewFileURLRepository(s *storage.FileStorage) repository.URLRepository {
 	return &FileRepository{
-		storage: storage.NewFileStorage(path),
+		storage: s,
 	}
 }
 

@@ -17,6 +17,7 @@ import (
 	"github.com/amberdance/url-shortener/internal/domain/repository"
 	"github.com/amberdance/url-shortener/internal/domain/shared"
 	infr "github.com/amberdance/url-shortener/internal/infrastructure/repository/url"
+	"github.com/amberdance/url-shortener/internal/infrastructure/storage"
 	"github.com/amberdance/url-shortener/internal/ports/webapi/dto"
 	"github.com/go-playground/validator/v10"
 	"github.com/stretchr/testify/assert"
@@ -36,7 +37,7 @@ var repo repository.URLRepository
 func setupTest() *URLShortenerHandler {
 	var log shared.Logger = MockLogger{}
 
-	repo = infr.NewInMemoryURLRepository()
+	repo = infr.NewInMemoryURLRepository(storage.NewInMemoryStorage())
 	useCases := usecase.URLUseCases{
 		Create:      url.NewCreateURLUseCase(repo),
 		CreateBatch: url.NewBatchCreateURLUseCase(repo),

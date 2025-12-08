@@ -17,9 +17,9 @@ type inMemoryRepository struct {
 
 var _ repository.URLRepository = (*inMemoryRepository)(nil)
 
-func NewInMemoryURLRepository() repository.URLRepository {
+func NewInMemoryURLRepository(s *storage.InMemoryStorage) repository.URLRepository {
 	return &inMemoryRepository{
-		storage: storage.NewInMemoryStorage(),
+		storage: s,
 	}
 }
 
