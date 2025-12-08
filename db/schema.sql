@@ -1,6 +1,6 @@
-\restrict 2bdaXkbHwlA1p8NfRzIWLkT7dsipil95MY8tfe7e3yimQ00BVWTN5iIIzZS2Urm
+\restrict N6x3uz85Tzwp1Gtw4gANHXGlr4Gchx4gYllzBWPHBfh6CW7XOqLskwpDOugTBcW
 
--- Dumped from database version 17.6 (Debian 17.6-2.pgdg13+1)
+-- Dumped from database version 17.7 (Debian 17.7-3.pgdg13+1)
 -- Dumped by pg_dump version 17.6 (Homebrew)
 
 SET statement_timeout = 0;
@@ -86,7 +86,7 @@ ALTER TABLE ONLY public.urls
 -- PostgreSQL database dump complete
 --
 
-\unrestrict 2bdaXkbHwlA1p8NfRzIWLkT7dsipil95MY8tfe7e3yimQ00BVWTN5iIIzZS2Urm
+\unrestrict N6x3uz85Tzwp1Gtw4gANHXGlr4Gchx4gYllzBWPHBfh6CW7XOqLskwpDOugTBcW
 
 
 --
