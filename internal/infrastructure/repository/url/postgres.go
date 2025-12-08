@@ -3,6 +3,7 @@ package url
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"github.com/amberdance/url-shortener/internal/domain/errs"
 	"github.com/amberdance/url-shortener/internal/domain/model"
@@ -40,32 +41,34 @@ func (r *PostgresRepository) Create(ctx context.Context, m *model.URL) error {
 func (r *PostgresRepository) CreateBatch(ctx context.Context, urls []*model.URL) error {
 	tx, err := r.pool.Begin(ctx)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to begin tx: %w", err)
 	}
+
 	defer func() {
 		if err != nil {
 			_ = tx.Rollback(ctx)
 		}
 	}()
 
-	b := &pgx.Batch{}
-	sql := "INSERT INTO urls (id, hash, original_url, created_at, correlation_id) VALUES ($1, $2, $3, $4, $5)"
+	batch := &pgx.Batch{}
+	sql := `insert into urls (id, hash, original_url, created_at, correlation_id) values ($1, $2, $3, $4, $5)`
+
 	for _, u := range urls {
-		b.Queue(sql, u.ID, u.Hash, u.OriginalURL, u.CreatedAt, u.CorrelationID)
+		batch.Queue(sql, u.ID, u.Hash, u.OriginalURL, u.CreatedAt, u.CorrelationID)
 	}
 
-	br := r.pool.SendBatch(ctx, b)
+	br := tx.SendBatch(ctx, batch)
 	defer br.Close()
 
 	for range urls {
-		if _, err = br.Exec(); err != nil {
-			_ = tx.Rollback(ctx)
-			return err
+		_, err = br.Exec()
+		if err != nil {
+			return fmt.Errorf("batch insert failed: %w", err)
 		}
 	}
 
 	if err = tx.Commit(ctx); err != nil {
-		return err
+		return fmt.Errorf("commit failed: %w", err)
 	}
 
 	return nil
