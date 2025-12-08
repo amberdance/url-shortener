@@ -79,7 +79,7 @@ func (a *App) init() error {
 
 func (a *App) resolveRepositoryProvider() (repository.Provider, error) {
 	if a.config.DatabaseDSN != "" {
-		err := migrateDb(a.config.DatabaseDSN)
+		err := migrateDB(a.config.DatabaseDSN)
 		if err != nil {
 			return nil, fmt.Errorf("failed to migrate database: %w", err)
 		}
@@ -105,7 +105,7 @@ func (a *App) resolveRepositoryProvider() (repository.Provider, error) {
 	return repository.NewMemoryRepositories(st), nil
 }
 
-func migrateDb(dsn string) error {
+func migrateDB(dsn string) error {
 	u, err := url.Parse(dsn)
 	if err != nil {
 		return err
