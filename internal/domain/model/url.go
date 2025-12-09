@@ -9,14 +9,15 @@ import (
 )
 
 type URL struct {
-	ID          uuid.UUID
-	Hash        string
-	OriginalURL string
-	CreatedAt   time.Time
-	UpdatedAt   *time.Time
+	ID            uuid.UUID
+	Hash          string
+	OriginalURL   string
+	CorrelationID *string
+	CreatedAt     time.Time
+	UpdatedAt     *time.Time
 }
 
-func NewURL(original string, hash string) (*URL, error) {
+func NewURL(original string, hash string, correlationID *string) (*URL, error) {
 	original = strings.TrimSpace(original)
 	hash = strings.TrimSpace(hash)
 
@@ -28,9 +29,10 @@ func NewURL(original string, hash string) (*URL, error) {
 	}
 
 	return &URL{
-		ID:          uuid.Must(uuid.NewV7()),
-		OriginalURL: original,
-		Hash:        hash,
-		CreatedAt:   time.Now(),
+		ID:            uuid.Must(uuid.NewV7()),
+		OriginalURL:   original,
+		Hash:          hash,
+		CorrelationID: correlationID,
+		CreatedAt:     time.Now(),
 	}, nil
 }

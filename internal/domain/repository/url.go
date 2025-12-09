@@ -8,5 +8,6 @@ import (
 
 type URLRepository interface {
 	Create(ctx context.Context, url *model.URL) error
+	CreateBatch(ctx context.Context, urls []*model.URL) error
 	FindByHash(ctx context.Context, hash string) (*model.URL, error)
 }

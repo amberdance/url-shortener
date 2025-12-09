@@ -12,7 +12,7 @@ import (
 )
 
 func TestCreateUseCase_Run_Success(t *testing.T) {
-	uc := urlusecase.NewCreateURLUseCase(url.NewInMemoryRepository())
+	uc := urlusecase.NewCreateURLUseCase(url.NewInMemoryURLRepository())
 	cmd := command.CreateURLEntryCommand{
 		OriginalURL: "https://hard2code.ru",
 	}

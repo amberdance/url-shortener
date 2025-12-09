@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 	"sync"
@@ -18,7 +19,7 @@ type FileRepository struct {
 	path string
 }
 
-func NewFileRepository(path string) repository.URLRepository {
+func NewFileURLRepository(path string) repository.URLRepository {
 	dir := filepath.Dir(path)
 	if err := os.MkdirAll(dir, 0755); err != nil {
 		panic(err)
@@ -46,6 +47,23 @@ func (r *FileRepository) Create(_ context.Context, u *model.URL) error {
 	}
 	r.data[u.Hash] = u
 	r.mu.Unlock()
+
+	return r.save()
+}
+
+func (r *FileRepository) CreateBatch(_ context.Context, urls []*model.URL) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	for _, u := range urls {
+		if _, ok := r.data[u.Hash]; ok {
+			return fmt.Errorf("duplicate hash: %s", u.Hash)
+		}
+	}
+
+	for _, u := range urls {
+		r.data[u.Hash] = u
+	}
 
 	return r.save()
 }

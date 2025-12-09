@@ -1,0 +1,10 @@
+services:
+  db:
+    image: postgres:17
+    container_name: shortener-db
+    restart: unless-stopped
+    volumes:
+      - db_data:/var/lib/postgresql/data
+
+volumes:
+  db_data:

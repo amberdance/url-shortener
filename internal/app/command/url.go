@@ -5,5 +5,10 @@ type GetURLByHashCommand struct {
 }
 
 type CreateURLEntryCommand struct {
-	OriginalURL string
+	CorrelationID *string
+	OriginalURL   string
+}
+
+type CreateBatchURLEntryCommand struct {
+	Entries []CreateURLEntryCommand
 }
