@@ -2,8 +2,10 @@ package url
 
 import (
 	"context"
+	"errors"
 
 	"github.com/amberdance/url-shortener/internal/app/command"
+	"github.com/amberdance/url-shortener/internal/domain/errs"
 	"github.com/amberdance/url-shortener/internal/domain/model"
 	"github.com/amberdance/url-shortener/internal/domain/repository"
 	"github.com/amberdance/url-shortener/internal/infrastructure/helpers"
@@ -18,12 +20,6 @@ func NewCreateURLUseCase(r repository.URLRepository) CreateUseCase {
 }
 
 func (uc CreateUseCase) Run(ctx context.Context, cmd command.CreateURLEntryCommand) (*model.URL, error) {
-	// @TODO:
-	//exists, err := uc.repository.FindByUrl(cmd.URLs)
-	//if exists != nil {
-	//	return exists
-	//}
-
 	m, err := model.NewURL(cmd.OriginalURL, helpers.GenerateHash(), cmd.CorrelationID)
 	if err != nil {
 		return nil, err
@@ -31,6 +27,17 @@ func (uc CreateUseCase) Run(ctx context.Context, cmd command.CreateURLEntryComma
 
 	err = uc.repository.Create(ctx, m)
 	if err != nil {
+		var dup errs.DuplicateEntryError
+		if errors.As(err, &dup) {
+			existed, findErr := uc.repository.FindByOriginalURL(ctx, m.OriginalURL)
+			if findErr != nil {
+				return nil, findErr
+			}
+			if existed == nil {
+				return nil, errs.NotFoundError("URL not found")
+			}
+			return existed, dup
+		}
 		return nil, err
 	}
 

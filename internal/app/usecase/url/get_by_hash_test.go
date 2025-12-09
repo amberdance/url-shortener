@@ -7,11 +7,12 @@ import (
 	"github.com/amberdance/url-shortener/internal/app/command"
 	urlusecase "github.com/amberdance/url-shortener/internal/app/usecase/url"
 	"github.com/amberdance/url-shortener/internal/infrastructure/repository/url"
+	"github.com/amberdance/url-shortener/internal/infrastructure/storage"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestGetByHashUseCase_Run_Success(t *testing.T) {
-	repo := url.NewInMemoryURLRepository()
+	repo := url.NewInMemoryURLRepository(storage.NewInMemoryStorage())
 	create := urlusecase.NewCreateURLUseCase(repo)
 	get := urlusecase.NewGetByHashUseCase(repo)
 	cmd := command.CreateURLEntryCommand{OriginalURL: "https://hard2code.ru"}
@@ -25,7 +26,7 @@ func TestGetByHashUseCase_Run_Success(t *testing.T) {
 }
 
 func TestGetByHashUseCase_Run_NotFound(t *testing.T) {
-	repo := url.NewInMemoryURLRepository()
+	repo := url.NewInMemoryURLRepository(storage.NewInMemoryStorage())
 	get := urlusecase.NewGetByHashUseCase(repo)
 
 	_, err := get.Run(context.Background(), command.GetURLByHashCommand{Hash: "none"})

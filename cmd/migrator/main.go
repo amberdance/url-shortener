@@ -1,6 +1,7 @@
 package main
 
 import (
+	"log"
 	"net/url"
 
 	"github.com/amacneil/dbmate/v2/pkg/dbmate"
@@ -14,7 +15,11 @@ func main() {
 		panic(err)
 	}
 
-	u, _ := url.Parse(a.Config().DatabaseDSN)
+	u, err := url.Parse(a.Config().DatabaseDSN)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
 	db := dbmate.New(u)
 
 	err = db.CreateAndMigrate()

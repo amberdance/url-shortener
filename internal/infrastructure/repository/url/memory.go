@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/amberdance/url-shortener/internal/domain/errs"
 	"github.com/amberdance/url-shortener/internal/domain/model"
 	"github.com/amberdance/url-shortener/internal/domain/repository"
 	"github.com/amberdance/url-shortener/internal/infrastructure/storage"
@@ -16,19 +17,20 @@ type inMemoryRepository struct {
 
 var _ repository.URLRepository = (*inMemoryRepository)(nil)
 
-func NewInMemoryURLRepository() repository.URLRepository {
+func NewInMemoryURLRepository(s *storage.InMemoryStorage) repository.URLRepository {
 	return &inMemoryRepository{
-		storage: storage.NewInMemoryStorage(),
+		storage: s,
 	}
 }
 
-func (r *inMemoryRepository) Create(_ context.Context, m *model.URL) error {
+func (r *inMemoryRepository) Create(ctx context.Context, m *model.URL) error {
+	existing, _ := r.FindByOriginalURL(ctx, m.OriginalURL)
+	if existing != nil {
+		return errs.DuplicateEntryError("url already exists")
+	}
+
 	r.storage.Mu.Lock()
 	defer r.storage.Mu.Unlock()
-
-	if _, exists := r.storage.Data[m.ID]; exists {
-		return errors.New("url with this ID already exists")
-	}
 
 	r.storage.Data[m.ID] = m
 	return nil
@@ -58,4 +60,17 @@ func (r *inMemoryRepository) FindByHash(_ context.Context, url string) (*model.U
 		}
 	}
 	return nil, errors.New("url not found")
+}
+
+func (r *inMemoryRepository) FindByOriginalURL(_ context.Context, originalURL string) (*model.URL, error) {
+	r.storage.Mu.RLock()
+	defer r.storage.Mu.RUnlock()
+
+	for _, m := range r.storage.Data {
+		if m.OriginalURL == originalURL {
+			return m, nil
+		}
+	}
+
+	return nil, nil
 }

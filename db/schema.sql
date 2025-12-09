@@ -1,6 +1,6 @@
-\restrict CShw2mUet00Jr8weM74hmyjznEhm1Q2W9dpks7ZOo5L27phnTcAaXEzl12R9fxm
+\restrict ormpqt5HfRLAjM0TfX0qEhqLHjUcEA2ugsXCLdabyojAZXQJD9kBcRFUoChy8S2
 
--- Dumped from database version 17.6 (Debian 17.6-2.pgdg13+1)
+-- Dumped from database version 17.7 (Debian 17.7-3.pgdg13+1)
 -- Dumped by pg_dump version 17.6 (Homebrew)
 
 SET statement_timeout = 0;
@@ -67,6 +67,14 @@ ALTER TABLE ONLY public.urls
 
 
 --
+-- Name: urls urls_original_url_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.urls
+    ADD CONSTRAINT urls_original_url_key UNIQUE (original_url);
+
+
+--
 -- Name: urls urls_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -78,7 +86,7 @@ ALTER TABLE ONLY public.urls
 -- PostgreSQL database dump complete
 --
 
-\unrestrict CShw2mUet00Jr8weM74hmyjznEhm1Q2W9dpks7ZOo5L27phnTcAaXEzl12R9fxm
+\unrestrict ormpqt5HfRLAjM0TfX0qEhqLHjUcEA2ugsXCLdabyojAZXQJD9kBcRFUoChy8S2
 
 
 --

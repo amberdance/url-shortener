@@ -68,12 +68,18 @@ func (h *URLShortenerHandler) shorten(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
+		var conflictErr errs.DuplicateEntryError
+		if errors.As(err, &conflictErr) {
+			w.WriteHeader(http.StatusConflict)
+			json.NewEncoder(w).Encode(dto.ShortURLResponse{URL: h.formatFullURL(m.Hash)})
+			return
+		}
+
 		helpers.HandleError(w, errs.ValidationError("Не удалось сформировать ссылку"))
 		return
 	}
 
 	w.WriteHeader(http.StatusCreated)
-
 	json.NewEncoder(w).Encode(dto.ShortURLResponse{URL: h.formatFullURL(m.Hash)})
 }
 

@@ -4,6 +4,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/amberdance/url-shortener/internal/infrastructure/storage"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/amberdance/url-shortener/internal/app/command"
@@ -12,7 +13,7 @@ import (
 )
 
 func TestCreateUseCase_Run_Success(t *testing.T) {
-	uc := urlusecase.NewCreateURLUseCase(url.NewInMemoryURLRepository())
+	uc := urlusecase.NewCreateURLUseCase(url.NewInMemoryURLRepository(storage.NewInMemoryStorage()))
 	cmd := command.CreateURLEntryCommand{
 		OriginalURL: "https://hard2code.ru",
 	}

@@ -2,148 +2,48 @@ package url
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
-	"fmt"
-	"os"
-	"path/filepath"
-	"sync"
 
+	"github.com/amberdance/url-shortener/internal/domain/errs"
 	"github.com/amberdance/url-shortener/internal/domain/model"
 	"github.com/amberdance/url-shortener/internal/domain/repository"
+	"github.com/amberdance/url-shortener/internal/infrastructure/storage"
 )
 
 type FileRepository struct {
-	mu   sync.RWMutex
-	data map[string]*model.URL
-	path string
+	storage *storage.FileStorage
 }
 
-func NewFileURLRepository(path string) repository.URLRepository {
-	dir := filepath.Dir(path)
-	if err := os.MkdirAll(dir, 0755); err != nil {
-		panic(err)
+func NewFileURLRepository(s *storage.FileStorage) repository.URLRepository {
+	return &FileRepository{
+		storage: s,
 	}
-
-	repo := &FileRepository{
-		data: make(map[string]*model.URL),
-		path: path,
-	}
-
-	if _, err := os.Stat(path); err == nil {
-		if err := repo.load(); err != nil {
-			panic(err)
-		}
-	}
-
-	return repo
 }
 
-func (r *FileRepository) Create(_ context.Context, u *model.URL) error {
-	r.mu.Lock()
-	if _, exists := r.data[u.Hash]; exists {
-		r.mu.Unlock()
-		return errors.New("duplicate hash")
+func (r *FileRepository) Create(ctx context.Context, u *model.URL) error {
+	if existing, _ := r.FindByOriginalURL(ctx, u.OriginalURL); existing != nil {
+		return errs.DuplicateEntryError("url already exists")
 	}
-	r.data[u.Hash] = u
-	r.mu.Unlock()
 
-	return r.save()
+	return r.storage.Put(u)
 }
 
 func (r *FileRepository) CreateBatch(_ context.Context, urls []*model.URL) error {
-	r.mu.Lock()
-	defer r.mu.Unlock()
-
-	for _, u := range urls {
-		if _, ok := r.data[u.Hash]; ok {
-			return fmt.Errorf("duplicate hash: %s", u.Hash)
-		}
-	}
-
-	for _, u := range urls {
-		r.data[u.Hash] = u
-	}
-
-	return r.save()
+	return r.storage.PutBatch(urls)
 }
 
 func (r *FileRepository) FindByHash(_ context.Context, hash string) (*model.URL, error) {
-	r.mu.RLock()
-	defer r.mu.RUnlock()
-
-	u, ok := r.data[hash]
+	u, ok := r.storage.GetByHash(hash)
 	if !ok {
 		return nil, errors.New("not found")
 	}
-
 	return u, nil
 }
 
-func (r *FileRepository) load() error {
-	file, err := os.Open(r.path)
-	if err != nil {
-		return err
+func (r *FileRepository) FindByOriginalURL(_ context.Context, originalURL string) (*model.URL, error) {
+	u, ok := r.storage.GetByOriginalURL(originalURL)
+	if !ok {
+		return nil, errs.NotFoundError("url not found")
 	}
-	defer file.Close()
-
-	var records []model.URL
-	if err := json.NewDecoder(file).Decode(&records); err != nil {
-		return err
-	}
-
-	r.loadEntries(records)
-	return nil
-}
-
-func (r *FileRepository) loadEntries(records []model.URL) {
-	r.mu.Lock()
-	defer r.mu.Unlock()
-
-	for _, m := range records {
-		r.data[m.Hash] = &model.URL{
-			ID:          m.ID,
-			Hash:        m.Hash,
-			OriginalURL: m.OriginalURL,
-			CreatedAt:   m.CreatedAt,
-			UpdatedAt:   m.UpdatedAt,
-		}
-	}
-}
-
-func (r *FileRepository) recordEntries() []model.URL {
-	r.mu.RLock()
-	defer r.mu.RUnlock()
-
-	records := make([]model.URL, 0, len(r.data))
-	for _, m := range r.data {
-		records = append(records, model.URL{
-			ID:          m.ID,
-			Hash:        m.Hash,
-			OriginalURL: m.OriginalURL,
-			CreatedAt:   m.CreatedAt,
-			UpdatedAt:   m.UpdatedAt,
-		})
-	}
-	return records
-}
-
-func (r *FileRepository) save() error {
-	records := r.recordEntries()
-
-	tmp := r.path + ".tmp"
-	file, err := os.Create(tmp)
-	if err != nil {
-		return err
-	}
-	defer file.Close()
-
-	enc := json.NewEncoder(file)
-	enc.SetIndent("", "  ")
-
-	if err := enc.Encode(records); err != nil {
-		return err
-	}
-
-	return os.Rename(tmp, r.path)
+	return u, nil
 }
