@@ -60,3 +60,7 @@ func MustValidate(w http.ResponseWriter, v *validator.Validate, dto any) {
 		panic(err)
 	}
 }
+
+func FormatFullURL(baseURL string, hash string) string {
+	return baseURL + hash
+}

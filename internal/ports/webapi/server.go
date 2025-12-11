@@ -13,7 +13,7 @@ import (
 	"github.com/amberdance/url-shortener/internal/app"
 	"github.com/amberdance/url-shortener/internal/domain/shared"
 	"github.com/amberdance/url-shortener/internal/ports/webapi/handlers"
-	webmw "github.com/amberdance/url-shortener/internal/ports/webapi/middleware"
+	mdw "github.com/amberdance/url-shortener/internal/ports/webapi/middleware"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -84,17 +84,24 @@ func buildRoutes(a *app.App) *chi.Mux {
 	router.Mount("/health", handlers.NewHealthcheckHandler().Routes())
 	router.Mount("/ping", handlers.NewPingHandler(a.Pinger()).Routes())
 
+	cont := a.Container()
+	baseURL := a.Config().BaseURL
+
 	router.Group(func(r chi.Router) {
-		r.Use(webmw.JSONMiddleware)
-		r.Use(webmw.GzipDecompressMiddleware)
-		r.Use(webmw.GzipCompressMiddleware)
+		r.Use(mdw.JSONMiddleware)
+		r.Use(mdw.GzipDecompressMiddleware)
+		r.Use(mdw.GzipCompressMiddleware)
+		r.Use(mdw.AuthMiddleware(a.Container().Auth))
 
 		r.Mount("/", handlers.NewURLShortenerHandler(
-			a.Config().BaseURL,
-			a.Container().UseCases.URL,
-			a.Container().Validator,
-			a.Logger()).Routes(),
+			baseURL,
+			cont.UseCases.URL,
+			cont.Validator,
+			a.Logger()).
+			Routes(),
 		)
+
+		r.Mount("/", handlers.NewUserHandler(baseURL, cont.UseCases.URL.GetAllByUserId).Routes())
 	})
 
 	return router

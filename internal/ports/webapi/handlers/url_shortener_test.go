@@ -13,9 +13,9 @@ import (
 	"github.com/amberdance/url-shortener/internal/app/command"
 	"github.com/amberdance/url-shortener/internal/app/usecase"
 	"github.com/amberdance/url-shortener/internal/app/usecase/url"
+	"github.com/amberdance/url-shortener/internal/domain/contracts"
 	"github.com/amberdance/url-shortener/internal/domain/model"
 	"github.com/amberdance/url-shortener/internal/domain/repository"
-	"github.com/amberdance/url-shortener/internal/domain/shared"
 	infr "github.com/amberdance/url-shortener/internal/infrastructure/repository/url"
 	"github.com/amberdance/url-shortener/internal/infrastructure/storage"
 	"github.com/amberdance/url-shortener/internal/ports/webapi/dto"
@@ -35,7 +35,7 @@ func (m MockLogger) Close() error             { return nil }
 var repo repository.URLRepository
 
 func setupTest() *URLShortenerHandler {
-	var log shared.Logger = MockLogger{}
+	var log contracts.Logger = MockLogger{}
 
 	repo = infr.NewInMemoryURLRepository(storage.NewInMemoryStorage())
 	useCases := usecase.URLUseCases{

@@ -1,4 +1,4 @@
-\restrict ormpqt5HfRLAjM0TfX0qEhqLHjUcEA2ugsXCLdabyojAZXQJD9kBcRFUoChy8S2
+\restrict Xcow1Ruv3XrtSs0LmTuABDGZuwvRDSWK30Smc1VPvbV24FOgcfdNonOUK6nmHeV
 
 -- Dumped from database version 17.7 (Debian 17.7-3.pgdg13+1)
 -- Dumped by pg_dump version 17.6 (Homebrew)
@@ -38,7 +38,8 @@ CREATE TABLE public.urls (
     original_url text NOT NULL,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     updated_at timestamp with time zone,
-    correlation_id character varying(255)
+    correlation_id character varying(255),
+    user_id uuid
 );
 
 
@@ -83,10 +84,17 @@ ALTER TABLE ONLY public.urls
 
 
 --
+-- Name: user_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX user_id_idx ON public.urls USING btree (user_id);
+
+
+--
 -- PostgreSQL database dump complete
 --
 
-\unrestrict ormpqt5HfRLAjM0TfX0qEhqLHjUcEA2ugsXCLdabyojAZXQJD9kBcRFUoChy8S2
+\unrestrict Xcow1Ruv3XrtSs0LmTuABDGZuwvRDSWK30Smc1VPvbV24FOgcfdNonOUK6nmHeV
 
 
 --
@@ -94,4 +102,5 @@ ALTER TABLE ONLY public.urls
 --
 
 INSERT INTO public.schema_migrations (version) VALUES
-    ('20251207152312');
+    ('20251207152312'),
+    ('20251212111111');
