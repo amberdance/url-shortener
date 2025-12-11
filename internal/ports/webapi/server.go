@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"github.com/amberdance/url-shortener/internal/app"
-	"github.com/amberdance/url-shortener/internal/domain/shared"
+	"github.com/amberdance/url-shortener/internal/domain/contracts"
 	"github.com/amberdance/url-shortener/internal/ports/webapi/handlers"
 	mdw "github.com/amberdance/url-shortener/internal/ports/webapi/middleware"
 
@@ -22,7 +22,7 @@ import (
 
 type Server struct {
 	httpServer *http.Server
-	logger     shared.Logger
+	logger     contracts.Logger
 }
 
 func NewServer(a *app.App) *Server {
