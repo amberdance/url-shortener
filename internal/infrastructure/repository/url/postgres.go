@@ -98,7 +98,7 @@ func (r *PostgresRepository) CreateBatch(ctx context.Context, urls []*model.URL)
 }
 
 func (r *PostgresRepository) FindByHash(ctx context.Context, hash string) (*model.URL, error) {
-	return r.mapToModel(r.pool.QueryRow(ctx, "select "+getFormattedSelectFields()+"urls where hash = $1", hash))
+	return r.mapToModel(r.pool.QueryRow(ctx, "select "+getFormattedSelectFields()+" from urls where hash = $1", hash))
 }
 
 func (r *PostgresRepository) FindByOriginalURL(ctx context.Context, original string) (*model.URL, error) {
