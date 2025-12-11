@@ -25,7 +25,7 @@ func NewUserHandler(u string, uc usecase.GetURLsByUserIDUseCase) *UserHandler {
 
 func (h *UserHandler) Routes() chi.Router {
 	r := chi.NewRouter()
-	r.Get("/api/user/urls", h.getAll)
+	r.Get("/urls", h.getAll)
 	return r
 }
 

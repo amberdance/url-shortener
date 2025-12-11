@@ -24,7 +24,7 @@ import (
 )
 
 const (
-	userUrlsEndpoint = "/api/user/urls"
+	userUrlsEndpoint = "/urls"
 )
 
 type handlerWrapper struct {
