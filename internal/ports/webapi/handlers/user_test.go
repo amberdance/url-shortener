@@ -62,6 +62,7 @@ func Test_When_UserHasUrls_Then_URLsReturned(t *testing.T) {
 	err := json.Unmarshal(response, &dtos)
 	assert.NoError(t, err)
 
+	assert.Equal(t, http.StatusOK, res.StatusCode)
 	assert.Equal(t, len(urls), len(dtos))
 
 	sort.Slice(dtos, func(i, j int) bool {
@@ -83,7 +84,7 @@ func Test_When_UserDoesNotHasUrls_Then_204HttpCodeReturned(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, userUrlsEndpoint, nil).WithContext(ctx)
 	w := httptest.NewRecorder()
 
-	req.Header.Set("user_id", "value")
+	req.Header.Set("user_id", "YmFhYzY0NzEtZGFhZS00NGY3LWE0M2QtODhmYmY0YTU3Mzlm.V9gkZuW7x7qAf8aG3BoBYcVWwKd6KWClgcxnQimAlnA")
 
 	h.handler.Routes().ServeHTTP(w, req)
 	res := w.Result()
@@ -135,7 +136,7 @@ func seedUrls(r repository.URLRepository, userId *uuid.UUID) []*model.URL {
 	urls := make([]*model.URL, 0, 10)
 
 	for i := 0; i < 10; i++ {
-		m, _ := model.NewURL(fmt.Sprintf("https://original-%d.ru", i), helpers.GenerateHash(), nil)
+		m, _ := model.NewURL(fmt.Sprintf("https://original-%d.ru", i), helpers.GenerateHash(), nil, nil)
 		m.UserID = userId
 		urls = append(urls, m)
 		_ = r.Create(context.TODO(), urls[i])

@@ -41,12 +41,13 @@ func NewPostgresURLRepository(pool *pgxpool.Pool) *PostgresRepository {
 
 func (r *PostgresRepository) Create(ctx context.Context, m *model.URL) error {
 	_, err := r.pool.Exec(ctx,
-		"insert into urls (id, created_at, hash, original_url, correlation_id) values ($1, $2, $3, $4, $5)",
+		"insert into urls (id, created_at, hash, original_url, correlation_id, user_id) values ($1, $2, $3, $4, $5, $6)",
 		m.ID,
 		m.CreatedAt,
 		m.Hash,
 		m.OriginalURL,
 		m.CorrelationID,
+		m.UserID,
 	)
 
 	var pgErr *pgconn.PgError
@@ -70,10 +71,10 @@ func (r *PostgresRepository) CreateBatch(ctx context.Context, urls []*model.URL)
 	}()
 
 	batch := &pgx.Batch{}
-	sql := "insert into urls (id, created_at, hash, original_url, correlation_id) values ($1, $2, $3, $4, $5)"
+	sql := "insert into urls (id, created_at, hash, original_url, correlation_id, user_id) values ($1, $2, $3, $4, $5, $6)"
 
 	for _, u := range urls {
-		batch.Queue(sql, u.ID, u.CreatedAt, u.Hash, u.OriginalURL, u.CorrelationID)
+		batch.Queue(sql, u.ID, u.CreatedAt, u.Hash, u.OriginalURL, u.CorrelationID, u.UserID)
 	}
 
 	br := tx.SendBatch(ctx, batch)

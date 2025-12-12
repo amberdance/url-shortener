@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/amberdance/url-shortener/internal/domain/contracts"
 	"github.com/amberdance/url-shortener/internal/domain/errs"
 	"github.com/go-playground/validator/v10"
 )
@@ -63,4 +64,12 @@ func MustValidate(w http.ResponseWriter, v *validator.Validate, dto any) {
 
 func FormatFullURL(baseURL string, hash string) string {
 	return baseURL + hash
+}
+
+func GetUserIDFromRequest(r *http.Request) string {
+	v := r.Context().Value(contracts.UserCtxKey)
+	if v == nil {
+		return ""
+	}
+	return v.(string)
 }

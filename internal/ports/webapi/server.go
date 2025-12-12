@@ -91,7 +91,7 @@ func buildRoutes(a *app.App) *chi.Mux {
 		r.Use(mdw.JSONMiddleware)
 		r.Use(mdw.GzipDecompressMiddleware)
 		r.Use(mdw.GzipCompressMiddleware)
-		r.Use(mdw.AuthMiddleware(a.Container().Auth))
+		r.Use(mdw.AuthMiddleware(cont.Auth))
 
 		r.Mount("/", handlers.NewURLShortenerHandler(
 			baseURL,

@@ -6,7 +6,6 @@ import (
 
 	"github.com/amberdance/url-shortener/internal/app/command"
 	usecase "github.com/amberdance/url-shortener/internal/app/usecase/url"
-	"github.com/amberdance/url-shortener/internal/domain/contracts"
 	"github.com/amberdance/url-shortener/internal/domain/errs"
 	"github.com/amberdance/url-shortener/internal/ports/webapi/dto"
 	"github.com/amberdance/url-shortener/internal/ports/webapi/helpers"
@@ -30,7 +29,7 @@ func (h *UserHandler) Routes() chi.Router {
 }
 
 func (h *UserHandler) getAll(w http.ResponseWriter, r *http.Request) {
-	userID := getUserID(r)
+	userID := helpers.GetUserIDFromRequest(r)
 	if userID == "" {
 		helpers.HandleError(w, errs.UnauthorizedError("Unauthorized"))
 		return
@@ -63,12 +62,4 @@ func (h *UserHandler) getAll(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	json.NewEncoder(w).Encode(result)
-}
-
-func getUserID(r *http.Request) string {
-	v := r.Context().Value(contracts.UserCtxKey)
-	if v == nil {
-		return ""
-	}
-	return v.(string)
 }

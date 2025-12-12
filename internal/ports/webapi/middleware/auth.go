@@ -9,19 +9,19 @@ import (
 	"github.com/google/uuid"
 )
 
-const cookieKey = "user_id"
+const CookieUserIdKey = "user_id"
 
 func AuthMiddleware(auth *auth.CookieAuth) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			c, err := r.Cookie(cookieKey)
+			c, err := r.Cookie(CookieUserIdKey)
 
 			if err != nil {
 				userID := uuid.New().String()
 				token := auth.Sign(userID)
 
 				http.SetCookie(w, &http.Cookie{
-					Name:     cookieKey,
+					Name:     CookieUserIdKey,
 					Value:    token,
 					Path:     "/",
 					HttpOnly: true,

@@ -9,6 +9,7 @@ type GetURLByHashCommand struct {
 type CreateURLEntryCommand struct {
 	CorrelationID *string
 	OriginalURL   string
+	UserID        *uuid.UUID
 }
 
 type CreateBatchURLEntryCommand struct {

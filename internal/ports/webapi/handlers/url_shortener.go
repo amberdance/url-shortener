@@ -17,6 +17,7 @@ import (
 	"github.com/amberdance/url-shortener/internal/ports/webapi/helpers"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-playground/validator/v10"
+	"github.com/google/uuid"
 )
 
 const (
@@ -53,9 +54,12 @@ func (h *URLShortenerHandler) shorten(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(r.Context(), writeRequestTimeout)
 	defer cancel()
 
+	userId, _ := uuid.Parse(helpers.GetUserIDFromRequest(r))
+
 	m, err := h.usecases.Create.Run(ctx, command.CreateURLEntryCommand{
 		OriginalURL:   req.URL,
 		CorrelationID: req.CorrelationID,
+		UserID:        &userId,
 	})
 
 	w.Header().Set("Content-Type", "application/json")
@@ -93,10 +97,12 @@ func (h *URLShortenerHandler) shortenBatch(w http.ResponseWriter, r *http.Reques
 		Entries: make([]command.CreateURLEntryCommand, 0, len(reqDto)),
 	}
 
+	userId, _ := uuid.Parse(helpers.GetUserIDFromRequest(r))
 	for _, d := range reqDto {
 		cmd.Entries = append(cmd.Entries, command.CreateURLEntryCommand{
 			OriginalURL:   d.URL,
 			CorrelationID: &d.CorrelationID,
+			UserID:        &userId,
 		})
 	}
 
