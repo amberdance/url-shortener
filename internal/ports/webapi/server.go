@@ -101,7 +101,7 @@ func buildRoutes(a *app.App) *chi.Mux {
 			Routes(),
 		)
 
-		r.Mount("/api/user", handlers.NewUserHandler(baseURL, cont.UseCases.URL.GetAllByUserId).Routes())
+		r.Mount("/api/user", handlers.NewUserHandler(baseURL, cont.UseCases.URL.GetByUserID).Routes())
 	})
 
 	return router
