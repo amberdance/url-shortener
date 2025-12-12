@@ -45,7 +45,7 @@ func buildUserHandler() *handlerWrapper {
 
 func Test_When_UserHasUrls_Then_URLsReturned(t *testing.T) {
 	h := buildUserHandler()
-	id, ctx := generateUuidWithContext(t.Context())
+	id, ctx := generateUUIDWithContext(t.Context())
 	urls := seedUrls(h.repository, &id)
 	req := httptest.NewRequest(http.MethodGet, userUrlsEndpoint, nil).WithContext(ctx)
 	w := httptest.NewRecorder()
@@ -80,7 +80,7 @@ func Test_When_UserHasUrls_Then_URLsReturned(t *testing.T) {
 
 func Test_When_UserDoesNotHasUrls_Then_204HttpCodeReturned(t *testing.T) {
 	h := buildUserHandler()
-	_, ctx := generateUuidWithContext(t.Context())
+	_, ctx := generateUUIDWithContext(t.Context())
 	req := httptest.NewRequest(http.MethodGet, userUrlsEndpoint, nil).WithContext(ctx)
 	w := httptest.NewRecorder()
 
@@ -125,19 +125,19 @@ func Test_When_InvalidSignatureProvided_Then_401HttpCodeReturned(t *testing.T) {
 	assert.Equal(t, http.StatusUnauthorized, res.StatusCode)
 }
 
-func generateUuidWithContext(ctx context.Context) (uuid.UUID, context.Context) {
+func generateUUIDWithContext(ctx context.Context) (uuid.UUID, context.Context) {
 	id := uuid.New()
 	c := context.WithValue(ctx, contracts.UserCtxKey, id.String())
 
 	return id, c
 }
 
-func seedUrls(r repository.URLRepository, userId *uuid.UUID) []*model.URL {
+func seedUrls(r repository.URLRepository, userID *uuid.UUID) []*model.URL {
 	urls := make([]*model.URL, 0, 10)
 
 	for i := 0; i < 10; i++ {
 		m, _ := model.NewURL(fmt.Sprintf("https://original-%d.ru", i), helpers.GenerateHash(), nil, nil)
-		m.UserID = userId
+		m.UserID = userID
 		urls = append(urls, m)
 		_ = r.Create(context.TODO(), urls[i])
 	}
