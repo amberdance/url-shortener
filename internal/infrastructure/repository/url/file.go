@@ -50,5 +50,5 @@ func (r *FileRepository) FindByOriginalURL(_ context.Context, originalURL string
 }
 
 func (r *FileRepository) FindAllByUserID(ctx context.Context, userID uuid.UUID) ([]*model.URL, error) {
-	return r.storage.GetByUserId(ctx, userID)
+	return r.storage.GetByUserID(ctx, userID)
 }

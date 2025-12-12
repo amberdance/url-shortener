@@ -134,7 +134,7 @@ func (s *FileStorage) save() error {
 	return os.Rename(tmp, s.path)
 }
 
-func (s *FileStorage) GetByUserId(_ context.Context, userID uuid.UUID) ([]*model.URL, error) {
+func (s *FileStorage) GetByUserID(_ context.Context, userID uuid.UUID) ([]*model.URL, error) {
 	var urls []*model.URL
 
 	s.mu.RLock()
