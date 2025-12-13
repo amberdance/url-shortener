@@ -188,8 +188,15 @@ func (h *URLShortenerHandler) deprecatedPost(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
+	var (
+		requestID = uuid.New().String()
+		userID, _ = uuid.Parse(helpers.GetUserIDFromRequest(r))
+	)
+
 	m, err := h.usecases.Create.Run(r.Context(), command.CreateURLEntryCommand{
-		OriginalURL: original,
+		OriginalURL:   original,
+		CorrelationID: &requestID,
+		UserID:        &userID,
 	})
 
 	w.Header().Set("Content-Type", "text/plain")
