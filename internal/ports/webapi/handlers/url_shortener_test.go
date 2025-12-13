@@ -41,7 +41,7 @@ func setupTest() *URLShortenerHandler {
 	useCases := usecase.URLUseCases{
 		Create:      url.NewCreateURLUseCase(repo),
 		CreateBatch: url.NewBatchCreateURLUseCase(repo),
-		GetByURL:    url.NewGetByHashUseCase(repo),
+		GetByURL:    url.NewGetURLByHashUseCase(repo),
 	}
 	return NewURLShortenerHandler(testHost, useCases, validator.New(), log)
 }
@@ -249,7 +249,7 @@ func TestShorten_409Error(t *testing.T) {
 	h := setupTest()
 	router := h.Routes()
 
-	existing := &model.URL{
+	existing := &model.URLEntry{
 		OriginalURL: "https://hard2code.ru",
 		Hash:        "hash",
 	}

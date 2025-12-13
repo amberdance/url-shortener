@@ -14,7 +14,7 @@ import (
 func TestGetByHashUseCase_Run_Success(t *testing.T) {
 	repo := url.NewInMemoryURLRepository(storage.NewInMemoryStorage())
 	create := urlusecase.NewCreateURLUseCase(repo)
-	get := urlusecase.NewGetByHashUseCase(repo)
+	get := urlusecase.NewGetURLByHashUseCase(repo)
 	cmd := command.CreateURLEntryCommand{OriginalURL: "https://hard2code.ru"}
 
 	m, err := create.Run(context.Background(), cmd)
@@ -27,7 +27,7 @@ func TestGetByHashUseCase_Run_Success(t *testing.T) {
 
 func TestGetByHashUseCase_Run_NotFound(t *testing.T) {
 	repo := url.NewInMemoryURLRepository(storage.NewInMemoryStorage())
-	get := urlusecase.NewGetByHashUseCase(repo)
+	get := urlusecase.NewGetURLByHashUseCase(repo)
 
 	_, err := get.Run(context.Background(), command.GetURLByHashCommand{Hash: "none"})
 	assert.Error(t, err)

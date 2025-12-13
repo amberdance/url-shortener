@@ -16,6 +16,6 @@ func NewGetURLsByUserIDUseCase(r repository.URLRepository) GetURLsByUserIDUseCas
 	return GetURLsByUserIDUseCase{repository: r}
 }
 
-func (uc GetURLsByUserIDUseCase) Run(ctx context.Context, cmd command.GetUrlsByUserIDCommand) ([]*model.URL, error) {
+func (uc GetURLsByUserIDUseCase) Run(ctx context.Context, cmd command.GetUrlsByUserIDCommand) ([]*model.URLEntry, error) {
 	return uc.repository.FindAllByUserID(ctx, cmd.UserID)
 }

@@ -21,7 +21,7 @@ func NewFileURLRepository(s *storage.FileStorage) repository.URLRepository {
 	}
 }
 
-func (r *FileRepository) Create(ctx context.Context, u *model.URL) error {
+func (r *FileRepository) Create(ctx context.Context, u *model.URLEntry) error {
 	if existing, _ := r.FindByOriginalURL(ctx, u.OriginalURL); existing != nil {
 		return errs.DuplicateEntryError("url already exists")
 	}
@@ -29,11 +29,11 @@ func (r *FileRepository) Create(ctx context.Context, u *model.URL) error {
 	return r.storage.Put(u)
 }
 
-func (r *FileRepository) CreateBatch(_ context.Context, urls []*model.URL) error {
+func (r *FileRepository) CreateBatch(_ context.Context, urls []*model.URLEntry) error {
 	return r.storage.PutBatch(urls)
 }
 
-func (r *FileRepository) FindByHash(_ context.Context, hash string) (*model.URL, error) {
+func (r *FileRepository) FindByHash(_ context.Context, hash string) (*model.URLEntry, error) {
 	u, ok := r.storage.GetByHash(hash)
 	if !ok {
 		return nil, errors.New("not found")
@@ -41,7 +41,7 @@ func (r *FileRepository) FindByHash(_ context.Context, hash string) (*model.URL,
 	return u, nil
 }
 
-func (r *FileRepository) FindByOriginalURL(_ context.Context, originalURL string) (*model.URL, error) {
+func (r *FileRepository) FindByOriginalURL(_ context.Context, originalURL string) (*model.URLEntry, error) {
 	u, ok := r.storage.GetByOriginalURL(originalURL)
 	if !ok {
 		return nil, errs.NotFoundError("url not found")
@@ -49,6 +49,6 @@ func (r *FileRepository) FindByOriginalURL(_ context.Context, originalURL string
 	return u, nil
 }
 
-func (r *FileRepository) FindAllByUserID(ctx context.Context, userID uuid.UUID) ([]*model.URL, error) {
+func (r *FileRepository) FindAllByUserID(ctx context.Context, userID uuid.UUID) ([]*model.URLEntry, error) {
 	return r.storage.GetByUserID(ctx, userID)
 }

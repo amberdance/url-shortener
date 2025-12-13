@@ -39,7 +39,7 @@ func NewPostgresURLRepository(pool *pgxpool.Pool) *PostgresRepository {
 	return &PostgresRepository{pool: pool}
 }
 
-func (r *PostgresRepository) Create(ctx context.Context, m *model.URL) error {
+func (r *PostgresRepository) Create(ctx context.Context, m *model.URLEntry) error {
 	_, err := r.pool.Exec(ctx,
 		"insert into urls (id, created_at, hash, original_url, correlation_id, user_id) values ($1, $2, $3, $4, $5, $6)",
 		m.ID,
@@ -58,7 +58,7 @@ func (r *PostgresRepository) Create(ctx context.Context, m *model.URL) error {
 	return err
 }
 
-func (r *PostgresRepository) CreateBatch(ctx context.Context, urls []*model.URL) error {
+func (r *PostgresRepository) CreateBatch(ctx context.Context, urls []*model.URLEntry) error {
 	tx, err := r.pool.Begin(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to begin tx: %w", err)
@@ -90,7 +90,6 @@ func (r *PostgresRepository) CreateBatch(ctx context.Context, urls []*model.URL)
 	if closeErr := br.Close(); closeErr != nil {
 		return fmt.Errorf("batch close failed: %w", closeErr)
 	}
-
 	if err = tx.Commit(ctx); err != nil {
 		return fmt.Errorf("commit failed: %w", err)
 	}
@@ -98,11 +97,11 @@ func (r *PostgresRepository) CreateBatch(ctx context.Context, urls []*model.URL)
 	return nil
 }
 
-func (r *PostgresRepository) FindByHash(ctx context.Context, hash string) (*model.URL, error) {
+func (r *PostgresRepository) FindByHash(ctx context.Context, hash string) (*model.URLEntry, error) {
 	return r.mapToModel(r.pool.QueryRow(ctx, "select "+getFormattedSelectFields()+" from urls where hash = $1", hash))
 }
 
-func (r *PostgresRepository) FindByOriginalURL(ctx context.Context, original string) (*model.URL, error) {
+func (r *PostgresRepository) FindByOriginalURL(ctx context.Context, original string) (*model.URLEntry, error) {
 	return r.mapToModel(r.pool.QueryRow(
 		ctx,
 		"select "+getFormattedSelectFields()+" from urls  where original_url = $1 limit 1",
@@ -110,7 +109,7 @@ func (r *PostgresRepository) FindByOriginalURL(ctx context.Context, original str
 	))
 }
 
-func (r *PostgresRepository) FindAllByUserID(ctx context.Context, userID uuid.UUID) ([]*model.URL, error) {
+func (r *PostgresRepository) FindAllByUserID(ctx context.Context, userID uuid.UUID) ([]*model.URLEntry, error) {
 	rows, err := r.pool.Query(
 		ctx,
 		"select "+getFormattedSelectFields()+" from urls where user_id=$1",
@@ -121,7 +120,7 @@ func (r *PostgresRepository) FindAllByUserID(ctx context.Context, userID uuid.UU
 	}
 	defer rows.Close()
 
-	var result []*model.URL
+	var result []*model.URLEntry
 	for rows.Next() {
 		m, err := r.mapToModel(rows)
 		if err != nil {
@@ -134,8 +133,8 @@ func (r *PostgresRepository) FindAllByUserID(ctx context.Context, userID uuid.UU
 	return result, nil
 }
 
-func (r *PostgresRepository) mapToModel(mapper Mapper) (*model.URL, error) {
-	var m model.URL
+func (r *PostgresRepository) mapToModel(mapper Mapper) (*model.URLEntry, error) {
+	var m model.URLEntry
 	err := mapper.Scan(
 		&m.ID,
 		&m.CreatedAt,

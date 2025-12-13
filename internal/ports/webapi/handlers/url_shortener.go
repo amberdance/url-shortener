@@ -13,6 +13,7 @@ import (
 	"github.com/amberdance/url-shortener/internal/app/usecase"
 	"github.com/amberdance/url-shortener/internal/domain/contracts"
 	"github.com/amberdance/url-shortener/internal/domain/errs"
+	"github.com/amberdance/url-shortener/internal/domain/model"
 	"github.com/amberdance/url-shortener/internal/ports/webapi/dto"
 	"github.com/amberdance/url-shortener/internal/ports/webapi/helpers"
 	"github.com/go-chi/chi/v5"
@@ -32,17 +33,27 @@ type URLShortenerHandler struct {
 	logger    contracts.Logger
 }
 
-func NewURLShortenerHandler(host string, uc usecase.URLUseCases, v *validator.Validate, l contracts.Logger) *URLShortenerHandler {
-	return &URLShortenerHandler{host, uc, v, l}
+func NewURLShortenerHandler(
+	baseURL string,
+	uc usecase.URLUseCases,
+	v *validator.Validate,
+	l contracts.Logger,
+) *URLShortenerHandler {
+	return &URLShortenerHandler{
+		baseURL:   baseURL,
+		usecases:  uc,
+		validator: v,
+		logger:    l,
+	}
 }
 
 func (h *URLShortenerHandler) Routes() chi.Router {
 	r := chi.NewRouter()
-
-	r.Post("/", h.deprecatedPost)
 	r.Get("/{hash:[a-zA-Z0-9]+}", h.get)
+	r.Post("/", h.deprecatedPost)
 	r.Post("/api/shorten", h.shorten)
 	r.Post("/api/shorten/batch", h.shortenBatch)
+
 	return r
 }
 
@@ -55,7 +66,6 @@ func (h *URLShortenerHandler) shorten(w http.ResponseWriter, r *http.Request) {
 	defer cancel()
 
 	userID, _ := uuid.Parse(helpers.GetUserIDFromRequest(r))
-
 	m, err := h.usecases.Create.Run(ctx, command.CreateURLEntryCommand{
 		OriginalURL:   req.URL,
 		CorrelationID: req.CorrelationID,
@@ -73,7 +83,7 @@ func (h *URLShortenerHandler) shorten(w http.ResponseWriter, r *http.Request) {
 		var conflictErr errs.DuplicateEntryError
 		if errors.As(err, &conflictErr) {
 			w.WriteHeader(http.StatusConflict)
-			json.NewEncoder(w).Encode(dto.ShortURLResponse{URL: helpers.FormatFullURL(h.baseURL, m.Hash)})
+			h.writeShortenDto(w, m)
 			return
 		}
 
@@ -82,6 +92,10 @@ func (h *URLShortenerHandler) shorten(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusCreated)
+	h.writeShortenDto(w, m)
+}
+
+func (h *URLShortenerHandler) writeShortenDto(w http.ResponseWriter, m *model.URLEntry) {
 	json.NewEncoder(w).Encode(dto.ShortURLResponse{URL: helpers.FormatFullURL(h.baseURL, m.Hash)})
 }
 
@@ -93,11 +107,11 @@ func (h *URLShortenerHandler) shortenBatch(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
+	userID, _ := uuid.Parse(helpers.GetUserIDFromRequest(r))
 	cmd := command.CreateBatchURLEntryCommand{
 		Entries: make([]command.CreateURLEntryCommand, 0, len(reqDto)),
 	}
 
-	userID, _ := uuid.Parse(helpers.GetUserIDFromRequest(r))
 	for _, d := range reqDto {
 		cmd.Entries = append(cmd.Entries, command.CreateURLEntryCommand{
 			OriginalURL:   d.URL,
@@ -107,9 +121,9 @@ func (h *URLShortenerHandler) shortenBatch(w http.ResponseWriter, r *http.Reques
 	}
 
 	ctx, cancel := context.WithTimeout(r.Context(), writeRequestTimeout)
-	urls, err := h.usecases.CreateBatch.Run(ctx, cmd)
 	defer cancel()
 
+	urls, err := h.usecases.CreateBatch.Run(ctx, cmd)
 	if err != nil {
 		if errors.Is(err, context.DeadlineExceeded) {
 			w.WriteHeader(http.StatusGatewayTimeout)
@@ -130,7 +144,7 @@ func (h *URLShortenerHandler) shortenBatch(w http.ResponseWriter, r *http.Reques
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
-	_ = json.NewEncoder(w).Encode(res)
+	json.NewEncoder(w).Encode(res)
 }
 
 func (h *URLShortenerHandler) validateBatchRequest(r *http.Request) ([]dto.BatchShortenURLRequest, error) {

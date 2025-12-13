@@ -12,10 +12,10 @@ type GetByHashUseCase struct {
 	repository repository.URLRepository
 }
 
-func NewGetByHashUseCase(r repository.URLRepository) GetByHashUseCase {
+func NewGetURLByHashUseCase(r repository.URLRepository) GetByHashUseCase {
 	return GetByHashUseCase{repository: r}
 }
 
-func (uc GetByHashUseCase) Run(ctx context.Context, cmd command.GetURLByHashCommand) (*model.URL, error) {
+func (uc GetByHashUseCase) Run(ctx context.Context, cmd command.GetURLByHashCommand) (*model.URLEntry, error) {
 	return uc.repository.FindByHash(ctx, cmd.Hash)
 }

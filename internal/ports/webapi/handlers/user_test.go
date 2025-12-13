@@ -44,11 +44,13 @@ func buildUserHandler() *handlerWrapper {
 }
 
 func Test_When_UserHasUrls_Then_URLsReturned(t *testing.T) {
-	h := buildUserHandler()
-	id, ctx := generateUUIDWithContext(t.Context())
-	urls := seedUrls(h.repository, &id)
-	req := httptest.NewRequest(http.MethodGet, userUrlsEndpoint, nil).WithContext(ctx)
-	w := httptest.NewRecorder()
+	var (
+		h       = buildUserHandler()
+		id, ctx = generateUUIDWithContext(t.Context())
+		urls    = seedUrls(h.repository, &id)
+		req     = httptest.NewRequest(http.MethodGet, userUrlsEndpoint, nil).WithContext(ctx)
+		w       = httptest.NewRecorder()
+	)
 
 	req.Header.Set("user_id", "value")
 
@@ -93,9 +95,11 @@ func Test_When_UserDoesNotHasUrls_Then_204HttpCodeReturned(t *testing.T) {
 }
 
 func Test_When_HeaderNotPresent_Then_401HttpCodeReturned(t *testing.T) {
-	h := buildUserHandler()
-	req := httptest.NewRequest(http.MethodGet, userUrlsEndpoint, nil)
-	w := httptest.NewRecorder()
+	var (
+		h   = buildUserHandler()
+		req = httptest.NewRequest(http.MethodGet, userUrlsEndpoint, nil)
+		w   = httptest.NewRecorder()
+	)
 
 	h.handler.Routes().ServeHTTP(w, req)
 	res := w.Result()
@@ -105,15 +109,16 @@ func Test_When_HeaderNotPresent_Then_401HttpCodeReturned(t *testing.T) {
 }
 
 func Test_When_InvalidSignatureProvided_Then_401HttpCodeReturned(t *testing.T) {
-	h := buildUserHandler()
+	var (
+		h         = buildUserHandler()
+		badCookie = &http.Cookie{
+			Name:  "user_id",
+			Value: "broken.token.value",
+			Path:  "/",
+		}
+		req = httptest.NewRequest(http.MethodGet, userUrlsEndpoint, nil)
+	)
 
-	badCookie := &http.Cookie{
-		Name:  "user_id",
-		Value: "broken.token.value",
-		Path:  "/",
-	}
-
-	req := httptest.NewRequest(http.MethodGet, userUrlsEndpoint, nil)
 	req.AddCookie(badCookie)
 
 	w := httptest.NewRecorder()
@@ -132,11 +137,11 @@ func generateUUIDWithContext(ctx context.Context) (uuid.UUID, context.Context) {
 	return id, c
 }
 
-func seedUrls(r repository.URLRepository, userID *uuid.UUID) []*model.URL {
-	urls := make([]*model.URL, 0, 10)
+func seedUrls(r repository.URLRepository, userID *uuid.UUID) []*model.URLEntry {
+	urls := make([]*model.URLEntry, 0, 10)
 
 	for i := 0; i < 10; i++ {
-		m, _ := model.NewURL(fmt.Sprintf("https://original-%d.ru", i), helpers.GenerateHash(), nil, nil)
+		m, _ := model.NewURLEntry(fmt.Sprintf("https://original-%d.ru", i), helpers.GenerateHash(), nil, nil)
 		m.UserID = userID
 		urls = append(urls, m)
 		_ = r.Create(context.TODO(), urls[i])

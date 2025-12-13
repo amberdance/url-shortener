@@ -8,7 +8,7 @@ import (
 	"github.com/google/uuid"
 )
 
-type URL struct {
+type URLEntry struct {
 	ID            uuid.UUID
 	Hash          string
 	OriginalURL   string
@@ -18,7 +18,7 @@ type URL struct {
 	UpdatedAt     *time.Time
 }
 
-func NewURL(original string, hash string, correlationID *string, userID *uuid.UUID) (*URL, error) {
+func NewURLEntry(original string, hash string, correlationID *string, userID *uuid.UUID) (*URLEntry, error) {
 	original = strings.TrimSpace(original)
 	hash = strings.TrimSpace(hash)
 
@@ -29,7 +29,7 @@ func NewURL(original string, hash string, correlationID *string, userID *uuid.UU
 		return nil, errs.ValidationError("empty hash")
 	}
 
-	return &URL{
+	return &URLEntry{
 		ID:            uuid.Must(uuid.NewV7()),
 		OriginalURL:   original,
 		Hash:          hash,

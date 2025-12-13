@@ -30,7 +30,7 @@ func buildContainer(r RepositoryProvider, cfg *config.Config) *Container {
 			URL: usecase.URLUseCases{
 				Create:      url.NewCreateURLUseCase(rep),
 				CreateBatch: url.NewBatchCreateURLUseCase(rep),
-				GetByURL:    url.NewGetByHashUseCase(rep),
+				GetByURL:    url.NewGetURLByHashUseCase(rep),
 				GetByUserID: url.NewGetURLsByUserIDUseCase(rep),
 			},
 		},

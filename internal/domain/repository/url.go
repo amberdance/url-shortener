@@ -8,9 +8,9 @@ import (
 )
 
 type URLRepository interface {
-	Create(ctx context.Context, url *model.URL) error
-	CreateBatch(ctx context.Context, urls []*model.URL) error
-	FindByHash(ctx context.Context, hash string) (*model.URL, error)
-	FindByOriginalURL(ctx context.Context, originalURL string) (*model.URL, error)
-	FindAllByUserID(ctx context.Context, userID uuid.UUID) ([]*model.URL, error)
+	Create(ctx context.Context, url *model.URLEntry) error
+	CreateBatch(ctx context.Context, urls []*model.URLEntry) error
+	FindByHash(ctx context.Context, hash string) (*model.URLEntry, error)
+	FindByOriginalURL(ctx context.Context, originalURL string) (*model.URLEntry, error)
+	FindAllByUserID(ctx context.Context, userID uuid.UUID) ([]*model.URLEntry, error)
 }
