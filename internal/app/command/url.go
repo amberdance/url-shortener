@@ -13,7 +13,7 @@ type CreateURLEntryCommand struct {
 }
 
 type CreateBatchURLEntryCommand struct {
-	Entries []CreateURLEntryCommand
+	Commands []CreateURLEntryCommand
 }
 
 type GetUrlsByUserIDCommand struct {

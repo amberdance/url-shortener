@@ -39,9 +39,9 @@ func setupTest() *URLShortenerHandler {
 
 	repo = infr.NewInMemoryURLRepository(storage.NewInMemoryStorage())
 	useCases := usecase.URLUseCases{
-		Create:      url.NewCreateURLUseCase(repo),
+		Create:      url.NewCreateUseCase(repo),
 		CreateBatch: url.NewBatchCreateURLUseCase(repo),
-		GetByURL:    url.NewGetURLByHashUseCase(repo),
+		GetByURL:    url.NewGetByHashUseCase(repo),
 	}
 	return NewURLShortenerHandler(testHost, useCases, validator.New(), log)
 }

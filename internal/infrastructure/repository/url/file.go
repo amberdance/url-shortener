@@ -2,7 +2,6 @@ package url
 
 import (
 	"context"
-	"errors"
 
 	"github.com/amberdance/url-shortener/internal/domain/errs"
 	"github.com/amberdance/url-shortener/internal/domain/model"
@@ -36,8 +35,9 @@ func (r *FileRepository) CreateBatch(_ context.Context, urls []*model.URLEntry) 
 func (r *FileRepository) FindByHash(_ context.Context, hash string) (*model.URLEntry, error) {
 	u, ok := r.storage.GetByHash(hash)
 	if !ok {
-		return nil, errors.New("not found")
+		return nil, errs.NotFoundError("url not found")
 	}
+
 	return u, nil
 }
 

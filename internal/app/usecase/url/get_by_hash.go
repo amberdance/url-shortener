@@ -12,7 +12,7 @@ type GetByHashUseCase struct {
 	repository repository.URLRepository
 }
 
-func NewGetURLByHashUseCase(r repository.URLRepository) GetByHashUseCase {
+func NewGetByHashUseCase(r repository.URLRepository) GetByHashUseCase {
 	return GetByHashUseCase{repository: r}
 }
 

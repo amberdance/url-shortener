@@ -28,9 +28,9 @@ func buildContainer(r RepositoryProvider, cfg *config.Config) *Container {
 			URL usecase.URLUseCases
 		}{
 			URL: usecase.URLUseCases{
-				Create:      url.NewCreateURLUseCase(rep),
+				Create:      url.NewCreateUseCase(rep),
 				CreateBatch: url.NewBatchCreateURLUseCase(rep),
-				GetByURL:    url.NewGetURLByHashUseCase(rep),
+				GetByURL:    url.NewGetByHashUseCase(rep),
 				GetByUserID: url.NewGetURLsByUserIDUseCase(rep),
 			},
 		},

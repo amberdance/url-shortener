@@ -1,4 +1,4 @@
-package url_test
+package url
 
 import (
 	"context"
@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/amberdance/url-shortener/internal/app/command"
-	uc "github.com/amberdance/url-shortener/internal/app/usecase/url"
 	"github.com/amberdance/url-shortener/internal/domain/errs"
 	"github.com/amberdance/url-shortener/internal/domain/model"
 	"github.com/amberdance/url-shortener/internal/infrastructure/repository/url"
@@ -15,29 +14,29 @@ import (
 	"github.com/stretchr/testify/suite"
 )
 
-type CreateURLUseCaseTestSuite struct {
+type CreateUseCaseTestSuite struct {
 	suite.Suite
 	ctx context.Context
 
-	useCase       uc.CreateUseCase
+	useCase       CreateUseCase
 	memoryStorage storage.InMemoryStorage
 }
 
-func (s *CreateURLUseCaseTestSuite) SetupSuite() {
+func (s *CreateUseCaseTestSuite) SetupSuite() {
 	s.ctx = context.Background()
 	s.memoryStorage = *storage.NewInMemoryStorage()
-	s.useCase = uc.NewCreateURLUseCase(url.NewInMemoryURLRepository(&s.memoryStorage))
+	s.useCase = NewCreateUseCase(url.NewInMemoryURLRepository(&s.memoryStorage))
 }
 
-func (s *CreateURLUseCaseTestSuite) TearDownTest() {
+func (s *CreateUseCaseTestSuite) TearDownTest() {
 	clear(s.memoryStorage.Data)
 }
 
 func TestCreateURLUseCaseSuite(t *testing.T) {
-	suite.Run(t, new(CreateURLUseCaseTestSuite))
+	suite.Run(t, new(CreateUseCaseTestSuite))
 }
 
-func (s *CreateURLUseCaseTestSuite) TestSuccess() {
+func (s *CreateUseCaseTestSuite) TestSuccess() {
 	entry, err := s.useCase.Run(s.ctx, command.CreateURLEntryCommand{
 		OriginalURL: "https://test.com",
 	})
@@ -47,8 +46,8 @@ func (s *CreateURLUseCaseTestSuite) TestSuccess() {
 	s.Equal(expected, entry)
 }
 
-func (s *CreateURLUseCaseTestSuite) TestDuplicateEntry() {
-	entry := s.createURLEntry()
+func (s *CreateUseCaseTestSuite) TestDuplicateEntry() {
+	entry := createTestURLEntry()
 	entry.OriginalURL = "duplicate"
 	s.memoryStorage.Data[entry.ID] = entry
 
@@ -57,7 +56,7 @@ func (s *CreateURLUseCaseTestSuite) TestDuplicateEntry() {
 	s.ErrorAs(err, &dep)
 }
 
-func (s *CreateURLUseCaseTestSuite) createURLEntry() *model.URLEntry {
+func createTestURLEntry() *model.URLEntry {
 	userID := uuid.New()
 	entryID := uuid.New()
 

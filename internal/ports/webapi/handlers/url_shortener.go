@@ -109,11 +109,11 @@ func (h *URLShortenerHandler) shortenBatch(w http.ResponseWriter, r *http.Reques
 
 	userID, _ := uuid.Parse(helpers.GetUserIDFromRequest(r))
 	cmd := command.CreateBatchURLEntryCommand{
-		Entries: make([]command.CreateURLEntryCommand, 0, len(reqDto)),
+		Commands: make([]command.CreateURLEntryCommand, 0, len(reqDto)),
 	}
 
 	for _, d := range reqDto {
-		cmd.Entries = append(cmd.Entries, command.CreateURLEntryCommand{
+		cmd.Commands = append(cmd.Commands, command.CreateURLEntryCommand{
 			OriginalURL:   d.URL,
 			CorrelationID: &d.CorrelationID,
 			UserID:        &userID,

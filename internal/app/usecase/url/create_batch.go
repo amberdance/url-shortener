@@ -19,7 +19,7 @@ func NewBatchCreateURLUseCase(r repository.URLRepository) BatchCreateURLUseCase 
 
 func (uc *BatchCreateURLUseCase) Run(ctx context.Context, cmd command.CreateBatchURLEntryCommand) ([]*model.URLEntry, error) {
 	var urls []*model.URLEntry
-	for _, e := range cmd.Entries {
+	for _, e := range cmd.Commands {
 		m, err := model.NewURLEntry(e.OriginalURL, helpers.GenerateHash(), e.CorrelationID, e.UserID)
 		if err != nil {
 			return nil, err
