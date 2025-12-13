@@ -9,6 +9,7 @@ import (
 	"github.com/amberdance/url-shortener/internal/domain/model"
 	"github.com/amberdance/url-shortener/internal/domain/repository"
 	"github.com/amberdance/url-shortener/internal/infrastructure/storage"
+	"github.com/google/uuid"
 )
 
 type inMemoryRepository struct {
@@ -73,4 +74,19 @@ func (r *inMemoryRepository) FindByOriginalURL(_ context.Context, originalURL st
 	}
 
 	return nil, nil
+}
+
+func (r *inMemoryRepository) FindAllByUserID(_ context.Context, userID uuid.UUID) ([]*model.URL, error) {
+	var urls []*model.URL
+
+	r.storage.Mu.RLock()
+	defer r.storage.Mu.RUnlock()
+
+	for _, item := range r.storage.Data {
+		if item.UserID != nil && *item.UserID == userID {
+			urls = append(urls, item)
+		}
+	}
+
+	return urls, nil
 }

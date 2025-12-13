@@ -20,7 +20,7 @@ func NewCreateURLUseCase(r repository.URLRepository) CreateUseCase {
 }
 
 func (uc CreateUseCase) Run(ctx context.Context, cmd command.CreateURLEntryCommand) (*model.URL, error) {
-	m, err := model.NewURL(cmd.OriginalURL, helpers.GenerateHash(), cmd.CorrelationID)
+	m, err := model.NewURL(cmd.OriginalURL, helpers.GenerateHash(), cmd.CorrelationID, cmd.UserID)
 	if err != nil {
 		return nil, err
 	}

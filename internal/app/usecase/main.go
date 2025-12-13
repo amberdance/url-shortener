@@ -6,4 +6,5 @@ type URLUseCases struct {
 	GetByURL    url.GetByHashUseCase
 	Create      url.CreateUseCase
 	CreateBatch url.BatchCreateURLUseCase
+	GetByUserID url.GetURLsByUserIDUseCase
 }

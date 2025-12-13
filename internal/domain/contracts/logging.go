@@ -1,4 +1,4 @@
-package shared
+package contracts
 
 type Logger interface {
 	Debug(message string, args ...any)

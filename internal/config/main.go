@@ -17,6 +17,7 @@ type Config struct {
 	LogLevel        string `env:"LOG_LEVEL" env-default:"info"`
 	FileStoragePath string `env:"FILE_STORAGE_PATH"`
 	DatabaseDSN     string `env:"DATABASE_DSN"`
+	AuthSecret      string `env:"AUTH_SECRET"`
 }
 
 var (

@@ -8,7 +8,6 @@ import (
 	"github.com/amacneil/dbmate/v2/pkg/dbmate"
 	"github.com/amberdance/url-shortener/internal/config"
 	"github.com/amberdance/url-shortener/internal/domain/contracts"
-	"github.com/amberdance/url-shortener/internal/domain/shared"
 	"github.com/amberdance/url-shortener/internal/infrastructure/logging"
 	"github.com/amberdance/url-shortener/internal/infrastructure/repository"
 	"github.com/amberdance/url-shortener/internal/infrastructure/storage"
@@ -17,7 +16,7 @@ import (
 type App struct {
 	config    *config.Config
 	container *Container
-	logger    shared.Logger
+	logger    contracts.Logger
 	storage   *storage.PostgresStorage
 	pinger    contracts.Pinger
 }
@@ -49,7 +48,7 @@ func (a *App) Config() *config.Config { return a.config }
 
 func (a *App) Container() *Container { return a.container }
 
-func (a *App) Logger() shared.Logger { return a.logger }
+func (a *App) Logger() contracts.Logger { return a.logger }
 
 func (a *App) Storage() *storage.PostgresStorage { return a.storage }
 
@@ -73,7 +72,7 @@ func (a *App) init() error {
 		return err
 	}
 
-	a.container = buildContainer(p)
+	a.container = buildContainer(p, a.config)
 	return nil
 }
 

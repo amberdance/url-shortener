@@ -8,6 +8,7 @@ import (
 	"github.com/amberdance/url-shortener/internal/domain/model"
 	"github.com/amberdance/url-shortener/internal/domain/repository"
 	"github.com/amberdance/url-shortener/internal/infrastructure/storage"
+	"github.com/google/uuid"
 )
 
 type FileRepository struct {
@@ -46,4 +47,8 @@ func (r *FileRepository) FindByOriginalURL(_ context.Context, originalURL string
 		return nil, errs.NotFoundError("url not found")
 	}
 	return u, nil
+}
+
+func (r *FileRepository) FindAllByUserID(ctx context.Context, userID uuid.UUID) ([]*model.URL, error) {
+	return r.storage.GetByUserID(ctx, userID)
 }

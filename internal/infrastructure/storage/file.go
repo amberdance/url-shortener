@@ -9,6 +9,7 @@ import (
 	"sync"
 
 	"github.com/amberdance/url-shortener/internal/domain/model"
+	"github.com/google/uuid"
 )
 
 type FileStorage struct {
@@ -131,4 +132,19 @@ func (s *FileStorage) save() error {
 	}
 
 	return os.Rename(tmp, s.path)
+}
+
+func (s *FileStorage) GetByUserID(_ context.Context, userID uuid.UUID) ([]*model.URL, error) {
+	var urls []*model.URL
+
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	for _, item := range s.data {
+		if item.UserID != nil && *item.UserID == userID {
+			urls = append(urls, item)
+		}
+	}
+
+	return urls, nil
 }

@@ -11,13 +11,13 @@ import (
 
 	"github.com/amberdance/url-shortener/internal/app/command"
 	"github.com/amberdance/url-shortener/internal/app/usecase"
+	"github.com/amberdance/url-shortener/internal/domain/contracts"
 	"github.com/amberdance/url-shortener/internal/domain/errs"
-	"github.com/amberdance/url-shortener/internal/domain/shared"
 	"github.com/amberdance/url-shortener/internal/ports/webapi/dto"
 	"github.com/amberdance/url-shortener/internal/ports/webapi/helpers"
 	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-playground/validator/v10"
+	"github.com/google/uuid"
 )
 
 const (
@@ -29,16 +29,15 @@ type URLShortenerHandler struct {
 	baseURL   string
 	usecases  usecase.URLUseCases
 	validator *validator.Validate
-	logger    shared.Logger
+	logger    contracts.Logger
 }
 
-func NewURLShortenerHandler(host string, uc usecase.URLUseCases, v *validator.Validate, l shared.Logger) *URLShortenerHandler {
+func NewURLShortenerHandler(host string, uc usecase.URLUseCases, v *validator.Validate, l contracts.Logger) *URLShortenerHandler {
 	return &URLShortenerHandler{host, uc, v, l}
 }
 
 func (h *URLShortenerHandler) Routes() chi.Router {
 	r := chi.NewRouter()
-	r.Use(middleware.Recoverer)
 
 	r.Post("/", h.deprecatedPost)
 	r.Get("/{hash:[a-zA-Z0-9]+}", h.get)
@@ -55,9 +54,12 @@ func (h *URLShortenerHandler) shorten(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(r.Context(), writeRequestTimeout)
 	defer cancel()
 
+	userID, _ := uuid.Parse(helpers.GetUserIDFromRequest(r))
+
 	m, err := h.usecases.Create.Run(ctx, command.CreateURLEntryCommand{
 		OriginalURL:   req.URL,
 		CorrelationID: req.CorrelationID,
+		UserID:        &userID,
 	})
 
 	w.Header().Set("Content-Type", "application/json")
@@ -71,7 +73,7 @@ func (h *URLShortenerHandler) shorten(w http.ResponseWriter, r *http.Request) {
 		var conflictErr errs.DuplicateEntryError
 		if errors.As(err, &conflictErr) {
 			w.WriteHeader(http.StatusConflict)
-			json.NewEncoder(w).Encode(dto.ShortURLResponse{URL: h.formatFullURL(m.Hash)})
+			json.NewEncoder(w).Encode(dto.ShortURLResponse{URL: helpers.FormatFullURL(h.baseURL, m.Hash)})
 			return
 		}
 
@@ -80,7 +82,7 @@ func (h *URLShortenerHandler) shorten(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(dto.ShortURLResponse{URL: h.formatFullURL(m.Hash)})
+	json.NewEncoder(w).Encode(dto.ShortURLResponse{URL: helpers.FormatFullURL(h.baseURL, m.Hash)})
 }
 
 func (h *URLShortenerHandler) shortenBatch(w http.ResponseWriter, r *http.Request) {
@@ -95,10 +97,12 @@ func (h *URLShortenerHandler) shortenBatch(w http.ResponseWriter, r *http.Reques
 		Entries: make([]command.CreateURLEntryCommand, 0, len(reqDto)),
 	}
 
+	userID, _ := uuid.Parse(helpers.GetUserIDFromRequest(r))
 	for _, d := range reqDto {
 		cmd.Entries = append(cmd.Entries, command.CreateURLEntryCommand{
 			OriginalURL:   d.URL,
 			CorrelationID: &d.CorrelationID,
+			UserID:        &userID,
 		})
 	}
 
@@ -117,10 +121,10 @@ func (h *URLShortenerHandler) shortenBatch(w http.ResponseWriter, r *http.Reques
 	}
 
 	res := make([]dto.BatchShortenURLResponse, 0, len(reqDto))
-	for _, u := range urls {
+	for _, m := range urls {
 		res = append(res, dto.BatchShortenURLResponse{
-			CorrelationID: *u.CorrelationID,
-			URL:           h.formatFullURL(u.Hash),
+			CorrelationID: *m.CorrelationID,
+			URL:           helpers.FormatFullURL(h.baseURL, m.Hash),
 		})
 	}
 
@@ -170,7 +174,6 @@ func (h *URLShortenerHandler) get(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusTemporaryRedirect)
 }
 
-// @TODO: удалить
 func (h *URLShortenerHandler) deprecatedPost(w http.ResponseWriter, r *http.Request) {
 	body, err := io.ReadAll(r.Body)
 	defer r.Body.Close()
@@ -185,8 +188,15 @@ func (h *URLShortenerHandler) deprecatedPost(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
+	var (
+		requestID = uuid.New().String()
+		userID, _ = uuid.Parse(helpers.GetUserIDFromRequest(r))
+	)
+
 	m, err := h.usecases.Create.Run(r.Context(), command.CreateURLEntryCommand{
-		OriginalURL: original,
+		OriginalURL:   original,
+		CorrelationID: &requestID,
+		UserID:        &userID,
 	})
 
 	w.Header().Set("Content-Type", "text/plain")
@@ -195,7 +205,7 @@ func (h *URLShortenerHandler) deprecatedPost(w http.ResponseWriter, r *http.Requ
 		var conflictErr errs.DuplicateEntryError
 		if errors.As(err, &conflictErr) {
 			w.WriteHeader(http.StatusConflict)
-			w.Write([]byte(h.formatFullURL(m.Hash)))
+			w.Write([]byte(helpers.FormatFullURL(h.baseURL, m.Hash)))
 			return
 		}
 
@@ -205,9 +215,5 @@ func (h *URLShortenerHandler) deprecatedPost(w http.ResponseWriter, r *http.Requ
 	}
 
 	w.WriteHeader(http.StatusCreated)
-	w.Write([]byte(h.formatFullURL(m.Hash)))
-}
-
-func (h *URLShortenerHandler) formatFullURL(hash string) string {
-	return h.baseURL + hash
+	w.Write([]byte(helpers.FormatFullURL(h.baseURL, m.Hash)))
 }
