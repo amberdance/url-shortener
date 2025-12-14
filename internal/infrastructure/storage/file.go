@@ -153,7 +153,7 @@ func (s *FileStorage) GetByUserID(_ context.Context, userID uuid.UUID) ([]*model
 	return urls, nil
 }
 
-func (s *FileStorage) DeleteByUserIdBatch(_ context.Context, userID uuid.UUID, hashes []string) error {
+func (s *FileStorage) DeleteByUserIDBatch(_ context.Context, userID uuid.UUID, hashes []string) error {
 	hashSet := make(map[string]struct{}, len(hashes))
 	for _, h := range hashes {
 		hashSet[h] = struct{}{}

@@ -54,5 +54,5 @@ func (r *FileRepository) FindAllByUserID(ctx context.Context, userID uuid.UUID) 
 }
 
 func (r *FileRepository) DeleteByUserIDAndHashes(ctx context.Context, userID uuid.UUID, hashes []string) error {
-	return r.storage.DeleteByUserIdBatch(ctx, userID, hashes)
+	return r.storage.DeleteByUserIDBatch(ctx, userID, hashes)
 }
