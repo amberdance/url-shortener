@@ -17,7 +17,6 @@ import (
 	"github.com/amberdance/url-shortener/internal/ports/webapi/helpers"
 	"github.com/amberdance/url-shortener/internal/ports/webapi/middleware"
 	"github.com/go-chi/chi/v5"
-	"github.com/go-playground/validator/v10"
 	"github.com/google/uuid"
 )
 
@@ -27,23 +26,20 @@ const (
 )
 
 type URLShortenerHandler struct {
-	baseURL   string
-	usecases  usecase.URLUseCases
-	validator *validator.Validate
-	logger    contracts.Logger
+	baseURL  string
+	usecases usecase.URLUseCases
+	logger   contracts.Logger
 }
 
 func NewURLShortenerHandler(
 	baseURL string,
 	uc usecase.URLUseCases,
-	v *validator.Validate,
 	l contracts.Logger,
 ) *URLShortenerHandler {
 	return &URLShortenerHandler{
-		baseURL:   baseURL,
-		usecases:  uc,
-		validator: v,
-		logger:    l,
+		baseURL:  baseURL,
+		usecases: uc,
+		logger:   l,
 	}
 }
 

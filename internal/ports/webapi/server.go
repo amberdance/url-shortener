@@ -96,7 +96,6 @@ func buildRoutes(a *app.App) *chi.Mux {
 		r.Mount("/", handlers.NewURLShortenerHandler(
 			baseURL,
 			cont.UseCases.URL,
-			cont.Validator,
 			a.Logger()).
 			Routes(),
 		)

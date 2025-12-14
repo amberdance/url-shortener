@@ -18,7 +18,6 @@ import (
 	"github.com/amberdance/url-shortener/internal/ports/webapi/dto"
 	helpers2 "github.com/amberdance/url-shortener/internal/ports/webapi/helpers"
 	"github.com/amberdance/url-shortener/internal/ports/webapi/middleware"
-	"github.com/go-playground/validator/v10"
 	"github.com/golang/mock/gomock"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/suite"
@@ -44,7 +43,7 @@ func (s *URLShortenerHandlerTestSuite) SetupTest() {
 		CreateBatch: url.NewBatchCreateURLUseCase(s.repository),
 		GetByURL:    url.NewGetByHashUseCase(s.repository),
 	}
-	s.handler = NewURLShortenerHandler(s.host, useCases, validator.New(), mocks.NewMockLogger(s.ctrl))
+	s.handler = NewURLShortenerHandler(s.host, useCases, mocks.NewMockLogger(s.ctrl))
 }
 
 func (s *URLShortenerHandlerTestSuite) TearDownSuite() {
