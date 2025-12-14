@@ -158,10 +158,10 @@ func (s *UserTestSuite) Test_DeleteBatch_When_InvalidBody_Then_422Returned() {
 	var (
 		_, ctx   = generateUUIDWithContext(s.ctx)
 		recorder = httptest.NewRecorder()
-		body, _  = json.Marshal(bytes.NewBufferString("invalid json"))
+		body     = bytes.NewBufferString("invalid json")
 	)
 
-	req := httptest.NewRequest(http.MethodDelete, userUrlsEndpoint, bytes.NewBuffer(body)).WithContext(ctx)
+	req := httptest.NewRequest(http.MethodDelete, userUrlsEndpoint, body).WithContext(ctx)
 	s.handler.Routes().ServeHTTP(recorder, req)
 	s.Equal(http.StatusUnprocessableEntity, recorder.Code)
 }
