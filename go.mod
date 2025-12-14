@@ -1,6 +1,6 @@
 module github.com/amberdance/url-shortener
 
-go 1.25
+go 1.24.11
 
 require (
 	github.com/amacneil/dbmate/v2 v2.28.0
