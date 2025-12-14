@@ -20,7 +20,13 @@ func NewCreateUseCase(r repository.URLRepository) CreateUseCase {
 }
 
 func (uc CreateUseCase) Run(ctx context.Context, cmd command.CreateURLEntryCommand) (*model.URLEntry, error) {
-	m, err := model.NewURLEntry(cmd.OriginalURL, helpers.GenerateHash(), cmd.CorrelationID, cmd.UserID)
+	m, err := model.NewURLEntry(
+		cmd.OriginalURL,
+		helpers.GenerateHash(),
+		cmd.CorrelationID,
+		cmd.UserID,
+	)
+
 	if err != nil {
 		return nil, err
 	}
@@ -34,7 +40,7 @@ func (uc CreateUseCase) Run(ctx context.Context, cmd command.CreateURLEntryComma
 				return nil, findErr
 			}
 			if existed == nil {
-				return nil, errs.NotFoundError("URLEntry not found")
+				return nil, errs.ErrNotFound
 			}
 			return existed, der
 		}

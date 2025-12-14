@@ -16,10 +16,10 @@ import (
 var (
 	instance   *App
 	once       sync.Once
-	UserCtxKey ctxKey = "userID"
+	UserCtxKey userCtxKey = "user_id"
 )
 
-type ctxKey string
+type userCtxKey string
 
 type App struct {
 	config    *config.Config

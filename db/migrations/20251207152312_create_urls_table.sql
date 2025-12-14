@@ -6,6 +6,7 @@ CREATE TABLE IF NOT EXISTS urls
     original_url   TEXT                NOT NULL,
     created_at     TIMESTAMPTZ         NOT NULL DEFAULT NOW(),
     updated_at     TIMESTAMPTZ         NULL,
+    request_id     uuid                NOT NULL,
     correlation_id varchar(255),
     PRIMARY KEY (id),
     UNIQUE (hash),
