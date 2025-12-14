@@ -41,8 +41,13 @@ func (r *InMemoryRepository) CreateBatch(_ context.Context, urls []*model.URLEnt
 	r.storage.Mu.Lock()
 	defer r.storage.Mu.Unlock()
 
+	urlsMap := make(map[string]model.URLEntry)
+	for _, url := range urls {
+		urlsMap[url.OriginalURL] = *url
+	}
+
 	for _, u := range r.storage.Data {
-		if u.OriginalURL == u.OriginalURL || u.Hash == u.Hash {
+		if _, ok := urlsMap[u.OriginalURL]; ok {
 			return errs.ErrDuplicate
 		}
 	}
