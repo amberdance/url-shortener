@@ -91,7 +91,7 @@ func (h *UserHandler) deleteBatch(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_ = h.deleteUserURLsBatchUseCase.RunAsync(command.DeleteUserURLSCommand{
+	h.deleteUserURLsBatchUseCase.RunAsync(command.DeleteUserURLSCommand{
 		UserID: parsedUUID,
 		Hashes: hashes,
 	})
