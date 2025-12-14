@@ -9,7 +9,6 @@ import (
 
 	"github.com/amberdance/url-shortener/internal/app"
 	"github.com/amberdance/url-shortener/internal/domain/errs"
-	"github.com/go-playground/validator/v10"
 )
 
 type ErrorResponse struct {
@@ -46,22 +45,6 @@ func HandleError(w http.ResponseWriter, err error) {
 		ID:      errorID,
 		Message: err.Error(),
 	})
-}
-
-func Validate(w http.ResponseWriter, v *validator.Validate, dto any) error {
-	err := v.Struct(dto)
-	if err != nil {
-		HandleError(w, errs.ValidationError(err.Error()))
-		return err
-	}
-	return nil
-}
-
-func MustValidate(w http.ResponseWriter, v *validator.Validate, dto any) {
-	err := Validate(w, v, dto)
-	if err != nil {
-		panic(err)
-	}
 }
 
 func FormatFullURL(baseURL string, hash string) string {
