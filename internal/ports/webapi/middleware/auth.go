@@ -4,7 +4,7 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/amberdance/url-shortener/internal/domain/contracts"
+	"github.com/amberdance/url-shortener/internal/app"
 	"github.com/amberdance/url-shortener/internal/infrastructure/auth"
 	"github.com/google/uuid"
 )
@@ -27,19 +27,19 @@ func AuthMiddleware(auth *auth.CookieAuth) func(http.Handler) http.Handler {
 					HttpOnly: true,
 				})
 
-				ctx := context.WithValue(r.Context(), contracts.UserCtxKey, userID)
+				ctx := context.WithValue(r.Context(), app.UserCtxKey, userID)
 				next.ServeHTTP(w, r.WithContext(ctx))
 				return
 			}
 
 			userID, err := auth.Verify(c.Value)
 			if err != nil || userID == "" {
-				ctx := context.WithValue(r.Context(), contracts.UserCtxKey, "")
+				ctx := context.WithValue(r.Context(), app.UserCtxKey, "")
 				next.ServeHTTP(w, r.WithContext(ctx))
 				return
 			}
 
-			ctx := context.WithValue(r.Context(), contracts.UserCtxKey, userID)
+			ctx := context.WithValue(r.Context(), app.UserCtxKey, userID)
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}

@@ -9,13 +9,13 @@ type ShortURLResponse struct {
 }
 
 type BatchShortenURLRequest struct {
-	CorrelationID string `json:"correlation_id" validate:"required"`
 	URL           string `json:"original_url" validate:"required"`
+	CorrelationID string `json:"correlation_id" validate:"required"`
 }
 
 type BatchShortenURLResponse struct {
-	CorrelationID string `json:"correlation_id"`
 	URL           string `json:"short_url"`
+	CorrelationID string `json:"correlation_id"`
 }
 
 type UserURLsResponse struct {

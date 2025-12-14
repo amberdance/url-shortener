@@ -7,6 +7,7 @@ import (
 	"github.com/google/uuid"
 )
 
+//go:generate mockgen -source=$GOFILE -destination=../../mocks/url_repository_mock.go -package=mocks
 type URLRepository interface {
 	Create(ctx context.Context, url *model.URLEntry) error
 	CreateBatch(ctx context.Context, urls []*model.URLEntry) error

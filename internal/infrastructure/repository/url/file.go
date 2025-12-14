@@ -22,7 +22,7 @@ func NewFileURLRepository(s *storage.FileStorage) repository.URLRepository {
 
 func (r *FileRepository) Create(ctx context.Context, u *model.URLEntry) error {
 	if existing, _ := r.FindByOriginalURL(ctx, u.OriginalURL); existing != nil {
-		return errs.DuplicateEntryError("url already exists")
+		return errs.ErrDuplicate
 	}
 
 	return r.storage.Put(u)
@@ -35,7 +35,7 @@ func (r *FileRepository) CreateBatch(_ context.Context, urls []*model.URLEntry) 
 func (r *FileRepository) FindByHash(_ context.Context, hash string) (*model.URLEntry, error) {
 	u, ok := r.storage.GetByHash(hash)
 	if !ok {
-		return nil, errs.NotFoundError("url not found")
+		return nil, errs.ErrNotFound
 	}
 
 	return u, nil
@@ -44,7 +44,7 @@ func (r *FileRepository) FindByHash(_ context.Context, hash string) (*model.URLE
 func (r *FileRepository) FindByOriginalURL(_ context.Context, originalURL string) (*model.URLEntry, error) {
 	u, ok := r.storage.GetByOriginalURL(originalURL)
 	if !ok {
-		return nil, errs.NotFoundError("url not found")
+		return nil, errs.ErrNotFound
 	}
 	return u, nil
 }

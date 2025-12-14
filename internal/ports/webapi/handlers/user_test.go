@@ -10,8 +10,8 @@ import (
 	"sort"
 	"testing"
 
+	"github.com/amberdance/url-shortener/internal/app"
 	usecase "github.com/amberdance/url-shortener/internal/app/usecase/url"
-	"github.com/amberdance/url-shortener/internal/domain/contracts"
 	"github.com/amberdance/url-shortener/internal/domain/model"
 	"github.com/amberdance/url-shortener/internal/domain/repository"
 	"github.com/amberdance/url-shortener/internal/infrastructure/helpers"
@@ -132,7 +132,7 @@ func Test_When_InvalidSignatureProvided_Then_401HttpCodeReturned(t *testing.T) {
 
 func generateUUIDWithContext(ctx context.Context) (uuid.UUID, context.Context) {
 	id := uuid.New()
-	c := context.WithValue(ctx, contracts.UserCtxKey, id.String())
+	c := context.WithValue(ctx, app.UserCtxKey, id.String())
 
 	return id, c
 }

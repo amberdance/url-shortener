@@ -13,6 +13,14 @@ import (
 	"github.com/amberdance/url-shortener/internal/infrastructure/storage"
 )
 
+var (
+	instance   *App
+	once       sync.Once
+	UserCtxKey ctxKey = "userID"
+)
+
+type ctxKey string
+
 type App struct {
 	config    *config.Config
 	container *Container
@@ -20,11 +28,6 @@ type App struct {
 	storage   *storage.PostgresStorage
 	pinger    contracts.Pinger
 }
-
-var (
-	instance *App
-	once     sync.Once
-)
 
 func GetApp() (*App, error) {
 	var initErr error

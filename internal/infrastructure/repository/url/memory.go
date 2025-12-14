@@ -2,7 +2,6 @@ package url
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/amberdance/url-shortener/internal/domain/errs"
 	"github.com/amberdance/url-shortener/internal/domain/model"
@@ -26,7 +25,7 @@ func NewInMemoryURLRepository(s *storage.InMemoryStorage) repository.URLReposito
 func (r *InMemoryRepository) Create(ctx context.Context, m *model.URLEntry) error {
 	existing, _ := r.FindByOriginalURL(ctx, m.OriginalURL)
 	if existing != nil {
-		return errs.DuplicateEntryError("url already exists")
+		return errs.ErrDuplicate
 	}
 
 	r.storage.Mu.Lock()
@@ -43,7 +42,7 @@ func (r *InMemoryRepository) CreateBatch(_ context.Context, urls []*model.URLEnt
 
 	for _, u := range r.storage.Data {
 		if u.OriginalURL == u.OriginalURL || u.Hash == u.Hash {
-			return errs.DuplicateEntryError(fmt.Sprintf("url %s already exists", u.OriginalURL))
+			return errs.ErrDuplicate
 		}
 	}
 
@@ -64,7 +63,7 @@ func (r *InMemoryRepository) FindByHash(_ context.Context, url string) (*model.U
 		}
 	}
 
-	return nil, errs.NotFoundError("url not found")
+	return nil, errs.ErrNotFound
 }
 
 func (r *InMemoryRepository) FindByOriginalURL(_ context.Context, originalURL string) (*model.URLEntry, error) {

@@ -6,7 +6,6 @@ import (
 	"errors"
 	"io"
 	"net/http"
-	"strings"
 	"time"
 
 	"github.com/amberdance/url-shortener/internal/app/command"
@@ -16,6 +15,7 @@ import (
 	"github.com/amberdance/url-shortener/internal/domain/model"
 	"github.com/amberdance/url-shortener/internal/ports/webapi/dto"
 	"github.com/amberdance/url-shortener/internal/ports/webapi/helpers"
+	"github.com/amberdance/url-shortener/internal/ports/webapi/middleware"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-playground/validator/v10"
 	"github.com/google/uuid"
@@ -50,7 +50,7 @@ func NewURLShortenerHandler(
 func (h *URLShortenerHandler) Routes() chi.Router {
 	r := chi.NewRouter()
 	r.Get("/{hash:[a-zA-Z0-9]+}", h.get)
-	r.Post("/", h.deprecatedPost)
+	r.Post("/", h.plainTextShorten)
 	r.Post("/api/shorten", h.shorten)
 	r.Post("/api/shorten/batch", h.shortenBatch)
 
@@ -60,19 +60,24 @@ func (h *URLShortenerHandler) Routes() chi.Router {
 func (h *URLShortenerHandler) shorten(w http.ResponseWriter, r *http.Request) {
 	var req dto.ShortURLRequest
 	_ = json.NewDecoder(r.Body).Decode(&req)
-	helpers.MustValidate(w, h.validator, req)
+
+	validatedURL, err := helpers.ValidateURL(req.URL)
+	if err != nil {
+		helpers.HandleError(w, err)
+		return
+	}
 
 	ctx, cancel := context.WithTimeout(r.Context(), writeRequestTimeout)
 	defer cancel()
 
 	userID, _ := uuid.Parse(helpers.GetUserIDFromRequest(r))
 	m, err := h.usecases.Create.Run(ctx, command.CreateURLEntryCommand{
-		OriginalURL:   req.URL,
+		OriginalURL:   validatedURL,
 		CorrelationID: req.CorrelationID,
 		UserID:        &userID,
 	})
 
-	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Content-Type", middleware.ContentTypeJSONHeaderValue)
 
 	if err != nil {
 		if errors.Is(err, context.DeadlineExceeded) {
@@ -87,7 +92,7 @@ func (h *URLShortenerHandler) shorten(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		helpers.HandleError(w, errs.ValidationError("Не удалось сформировать ссылку"))
+		helpers.HandleError(w, errs.ErrIncorrectURL)
 		return
 	}
 
@@ -130,7 +135,7 @@ func (h *URLShortenerHandler) shortenBatch(w http.ResponseWriter, r *http.Reques
 			return
 		}
 
-		helpers.HandleError(w, errs.InvalidArgumentError("Не удалось создать записи"))
+		helpers.HandleError(w, errs.ErrIncorrectURL)
 		return
 	}
 
@@ -142,7 +147,7 @@ func (h *URLShortenerHandler) shortenBatch(w http.ResponseWriter, r *http.Reques
 		})
 	}
 
-	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Content-Type", middleware.ContentTypeJSONHeaderValue)
 	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(res)
 }
@@ -155,7 +160,7 @@ func (h *URLShortenerHandler) validateBatchRequest(r *http.Request) ([]dto.Batch
 	}
 
 	if len(reqItems) == 0 {
-		return nil, errs.ValidationError("Не передано ни одного url")
+		return nil, errs.ErrEmptyURLSet
 	}
 
 	return reqItems, nil
@@ -164,7 +169,7 @@ func (h *URLShortenerHandler) validateBatchRequest(r *http.Request) ([]dto.Batch
 func (h *URLShortenerHandler) get(w http.ResponseWriter, r *http.Request) {
 	hash := chi.URLParam(r, "hash")
 	if hash == "" {
-		helpers.HandleError(w, errs.ValidationError("Не передана ссылка"))
+		helpers.HandleError(w, errs.ErrIncorrectURL)
 		return
 	}
 
@@ -180,7 +185,7 @@ func (h *URLShortenerHandler) get(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusGatewayTimeout)
 			return
 		}
-		helpers.HandleError(w, errs.NotFoundError("Не найден ресурс"))
+		helpers.HandleError(w, errs.ErrNotFound)
 		return
 	}
 
@@ -188,17 +193,17 @@ func (h *URLShortenerHandler) get(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusTemporaryRedirect)
 }
 
-func (h *URLShortenerHandler) deprecatedPost(w http.ResponseWriter, r *http.Request) {
+func (h *URLShortenerHandler) plainTextShorten(w http.ResponseWriter, r *http.Request) {
 	body, err := io.ReadAll(r.Body)
 	defer r.Body.Close()
 	if err != nil || len(body) == 0 {
-		helpers.HandleError(w, errs.ValidationError("Не передан URL"))
+		helpers.HandleError(w, errs.ErrIncorrectURL)
 		return
 	}
 
-	original := strings.TrimSpace(string(body))
-	if original == "" {
-		helpers.HandleError(w, errs.ValidationError("Не передан URL"))
+	validatedURL, err := helpers.ValidateURL(string(body))
+	if err != nil {
+		helpers.HandleError(w, err)
 		return
 	}
 
@@ -208,7 +213,7 @@ func (h *URLShortenerHandler) deprecatedPost(w http.ResponseWriter, r *http.Requ
 	)
 
 	m, err := h.usecases.Create.Run(r.Context(), command.CreateURLEntryCommand{
-		OriginalURL:   original,
+		OriginalURL:   validatedURL,
 		CorrelationID: &requestID,
 		UserID:        &userID,
 	})
@@ -224,7 +229,7 @@ func (h *URLShortenerHandler) deprecatedPost(w http.ResponseWriter, r *http.Requ
 		}
 
 		h.logger.Error(err.Error())
-		helpers.HandleError(w, errs.ValidationError("Не удалось сформировать ссылку"))
+		helpers.HandleError(w, errs.ErrIncorrectURL)
 		return
 	}
 

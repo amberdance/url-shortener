@@ -9,6 +9,7 @@ import (
 	"github.com/amberdance/url-shortener/internal/domain/errs"
 	"github.com/amberdance/url-shortener/internal/ports/webapi/dto"
 	"github.com/amberdance/url-shortener/internal/ports/webapi/helpers"
+	"github.com/amberdance/url-shortener/internal/ports/webapi/middleware"
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 )
@@ -32,19 +33,19 @@ func (h *UserHandler) Routes() chi.Router {
 func (h *UserHandler) getAll(w http.ResponseWriter, r *http.Request) {
 	userID := helpers.GetUserIDFromRequest(r)
 	if userID == "" {
-		helpers.HandleError(w, errs.UnauthorizedError("Unauthorized"))
+		helpers.HandleError(w, errs.ErrUnauthorized)
 		return
 	}
 
 	parsedUUID, err := uuid.Parse(userID)
 	if err != nil {
-		helpers.HandleError(w, errs.InvalidArgumentError("Incorrect user ID"))
+		helpers.HandleError(w, errs.ErrInvalidUserID)
 		return
 	}
 
 	urls, err := h.getURLsByUserIDUseCase.Run(r.Context(), command.GetUrlsByUserIDCommand{UserID: parsedUUID})
 	if err != nil {
-		helpers.HandleError(w, errs.NotFoundError("Urls not found"))
+		helpers.HandleError(w, errs.ErrNotFound)
 		return
 	}
 
@@ -61,6 +62,6 @@ func (h *UserHandler) getAll(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.Header().Set("Content-Type", middleware.ContentTypeJSONHeaderValue)
 	json.NewEncoder(w).Encode(result)
 }

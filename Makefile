@@ -1,6 +1,3 @@
-TEST_FLAGS=-v -coverprofile=coverage.out -covermode=atomic
-TEST_PATH=./internal/...
-
 address ?=
 host ?=
 
@@ -17,7 +14,7 @@ status:
 	docker compose ps
 
 test:
-	go test $(TEST_PATH) $(TEST_FLAGS)
+	gotestsum --format=testname -- -coverprofile=coverage.out -covermode=atomic ./internal/...
 
 build:
 	go build -o .bin/server cmd/shortener/main.go
@@ -28,3 +25,6 @@ run:
 
 migrate:
 	go build -o .bin/migrator cmd/migrator/main.go && .bin/migrator
+
+generate:
+	go generate ./...
