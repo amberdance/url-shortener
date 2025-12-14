@@ -228,7 +228,7 @@ func (s *URLShortenerHandlerTestSuite) Test_When_URLExists_Then_ShortenShouldRet
 	s.Equal(http.StatusConflict, res.StatusCode)
 
 	var resp dto.ShortURLResponse
-	body, err = io.ReadAll(res.Body)
+	body, _ = io.ReadAll(res.Body)
 	err = json.Unmarshal(body, &resp)
 
 	s.NoError(err)
@@ -347,7 +347,7 @@ func (s *URLShortenerHandlerTestSuite) Test_When_URLOrCorrelationIDExists_Then_S
 	s.NoError(err)
 
 	var resp webhelpers.ErrorResponse
-	err = json.Unmarshal(body, &resp)
+	_ = json.Unmarshal(body, &resp)
 	s.Equal(resp.ID, errs.ErrIncorrectURL.ID())
 	s.Equal(resp.Message, errs.ErrIncorrectURL.Error())
 }
