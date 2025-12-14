@@ -7,5 +7,5 @@ type URLUseCases struct {
 	Create              url.CreateUseCase
 	CreateBatch         url.BatchCreateURLUseCase
 	GetByUserID         url.GetURLsByUserIDUseCase
-	DeleteByUserIdBatch url.DeleteUserURLsBatchUseCase
+	DeleteByUserIDBatch url.DeleteUserURLsBatchUseCase
 }

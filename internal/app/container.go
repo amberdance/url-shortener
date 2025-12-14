@@ -30,7 +30,7 @@ func buildContainer(r RepositoryProvider, cfg *config.Config, l contracts.Logger
 				CreateBatch:         url.NewBatchCreateURLUseCase(rep),
 				GetByURL:            url.NewGetByHashUseCase(rep),
 				GetByUserID:         url.NewGetURLsByUserIDUseCase(rep),
-				DeleteByUserIdBatch: url.NewDeleteUserURLsBatchUseCase(rep, l),
+				DeleteByUserIDBatch: url.NewDeleteUserURLsBatchUseCase(rep, l),
 			},
 		},
 	}
