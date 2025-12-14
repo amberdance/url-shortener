@@ -34,7 +34,7 @@ func (uc CreateUseCase) Run(ctx context.Context, cmd command.CreateURLEntryComma
 				return nil, findErr
 			}
 			if existed == nil {
-				return nil, errs.NotFoundError("URLEntry not found")
+				return nil, errs.ErrNotFound
 			}
 			return existed, der
 		}
