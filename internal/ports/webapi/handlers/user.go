@@ -71,13 +71,13 @@ func (h *UserHandler) getAll(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *UserHandler) deleteBatch(w http.ResponseWriter, r *http.Request) {
-	userId := helpers.GetUserIDFromRequest(r)
-	if userId == "" {
+	userID := helpers.GetUserIDFromRequest(r)
+	if userID == "" {
 		helpers.HandleError(w, errs.ErrUnauthorized)
 		return
 	}
 
-	parsedUUID, err := uuid.Parse(userId)
+	parsedUUID, err := uuid.Parse(userID)
 	if err != nil {
 		helpers.HandleError(w, errs.ErrInvalidUserID)
 		return
