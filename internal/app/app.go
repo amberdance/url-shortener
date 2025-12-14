@@ -75,7 +75,7 @@ func (a *App) init() error {
 		return err
 	}
 
-	a.container = buildContainer(p, a.config)
+	a.container = buildContainer(p, a.config, a.logger)
 	return nil
 }
 

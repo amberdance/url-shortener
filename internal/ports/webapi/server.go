@@ -93,14 +93,8 @@ func buildRoutes(a *app.App) *chi.Mux {
 		r.Use(mdw.GzipCompressMiddleware)
 		r.Use(mdw.AuthMiddleware(cont.Auth))
 
-		r.Mount("/", handlers.NewURLShortenerHandler(
-			baseURL,
-			cont.UseCases.URL,
-			a.Logger()).
-			Routes(),
-		)
-
-		r.Mount("/api/user", handlers.NewUserHandler(baseURL, cont.UseCases.URL.GetByUserID).Routes())
+		r.Mount("/", handlers.NewURLShortenerHandler(baseURL, cont.UseCases.URL).Routes())
+		r.Mount("/api/user", handlers.NewUserHandler(baseURL, cont.UseCases.URL.GetByUserID, cont.UseCases.URL.DeleteByUserIdBatch).Routes())
 	})
 
 	return router

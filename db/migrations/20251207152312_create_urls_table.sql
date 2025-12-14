@@ -7,6 +7,7 @@ CREATE TABLE IF NOT EXISTS urls
     created_at     TIMESTAMPTZ         NOT NULL DEFAULT NOW(),
     updated_at     TIMESTAMPTZ         NULL,
     correlation_id varchar(255),
+    deleted_at     TIMESTAMPTZ         NULL,
     PRIMARY KEY (id),
     UNIQUE (hash),
     UNIQUE (correlation_id),

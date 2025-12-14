@@ -19,3 +19,8 @@ type CreateBatchURLEntryCommand struct {
 type GetUrlsByUserIDCommand struct {
 	UserID uuid.UUID
 }
+
+type DeleteUserURLSCommand struct {
+	UserID uuid.UUID
+	Hashes []string
+}

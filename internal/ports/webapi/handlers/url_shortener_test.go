@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/amberdance/url-shortener/internal/app/usecase"
 	"github.com/amberdance/url-shortener/internal/app/usecase/url"
@@ -16,7 +17,7 @@ import (
 	"github.com/amberdance/url-shortener/internal/infrastructure/helpers"
 	"github.com/amberdance/url-shortener/internal/mocks"
 	"github.com/amberdance/url-shortener/internal/ports/webapi/dto"
-	helpers2 "github.com/amberdance/url-shortener/internal/ports/webapi/helpers"
+	webhelpers "github.com/amberdance/url-shortener/internal/ports/webapi/helpers"
 	"github.com/amberdance/url-shortener/internal/ports/webapi/middleware"
 	"github.com/golang/mock/gomock"
 	"github.com/google/uuid"
@@ -43,7 +44,7 @@ func (s *URLShortenerHandlerTestSuite) SetupTest() {
 		CreateBatch: url.NewBatchCreateURLUseCase(s.repository),
 		GetByURL:    url.NewGetByHashUseCase(s.repository),
 	}
-	s.handler = NewURLShortenerHandler(s.host, useCases, mocks.NewMockLogger(s.ctrl))
+	s.handler = NewURLShortenerHandler(s.host, useCases)
 }
 
 func (s *URLShortenerHandlerTestSuite) TearDownSuite() {
@@ -345,8 +346,32 @@ func (s *URLShortenerHandlerTestSuite) Test_When_URLOrCorrelationIDExists_Then_S
 	body, err = io.ReadAll(res.Body)
 	s.NoError(err)
 
-	var resp helpers2.ErrorResponse
+	var resp webhelpers.ErrorResponse
 	err = json.Unmarshal(body, &resp)
 	s.Equal(resp.ID, errs.ErrIncorrectURL.ID())
 	s.Equal(resp.Message, errs.ErrIncorrectURL.Error())
+}
+
+func (s *URLShortenerHandlerTestSuite) Test_GetByHash_When_URLDeleted_Then_410Returned() {
+	var (
+		hash      = helpers.GenerateHash()
+		deletedAt = time.Now().UTC()
+		id, ctx   = generateUUIDWithContext(s.ctx)
+		entry     = &model.URLEntry{
+			OriginalURL: "https://example.com",
+			Hash:        hash,
+			DeletedAt:   &deletedAt,
+			UserID:      &id,
+		}
+		recorder = httptest.NewRecorder()
+	)
+
+	s.repository.EXPECT().
+		FindByHash(gomock.Any(), hash).
+		Return(entry, nil).
+		Times(1)
+
+	req := httptest.NewRequest(http.MethodGet, "/"+hash, nil).WithContext(ctx)
+	s.handler.Routes().ServeHTTP(recorder, req)
+	s.Equal(http.StatusGone, recorder.Code)
 }

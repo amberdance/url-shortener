@@ -21,6 +21,7 @@ var dbFields = []string{
 	"hash",
 	"original_url",
 	"correlation_id",
+	"deleted_at",
 }
 
 func getFormattedSelectFields() string {
@@ -112,7 +113,7 @@ func (r *PostgresRepository) FindByOriginalURL(ctx context.Context, original str
 func (r *PostgresRepository) FindAllByUserID(ctx context.Context, userID uuid.UUID) ([]*model.URLEntry, error) {
 	rows, err := r.pool.Query(
 		ctx,
-		"select "+getFormattedSelectFields()+" from urls where user_id=$1",
+		"select "+getFormattedSelectFields()+" from urls where user_id=$1 and deleted_at is null",
 		userID,
 	)
 	if err != nil {
@@ -142,6 +143,7 @@ func (r *PostgresRepository) mapToModel(mapper Mapper) (*model.URLEntry, error) 
 		&m.Hash,
 		&m.OriginalURL,
 		&m.CorrelationID,
+		&m.DeletedAt,
 	)
 
 	if err != nil {
@@ -152,4 +154,9 @@ func (r *PostgresRepository) mapToModel(mapper Mapper) (*model.URLEntry, error) 
 	}
 
 	return &m, nil
+}
+
+func (r *PostgresRepository) DeleteByUserIDAndHashes(ctx context.Context, userID uuid.UUID, hashes []string) error {
+	_, err := r.pool.Exec(ctx, "update urls set deleted_at = now() where user_id = $1 and hash = any($2)", userID, hashes)
+	return err
 }

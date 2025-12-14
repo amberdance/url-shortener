@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"sync"
+	"time"
 
 	"github.com/amberdance/url-shortener/internal/domain/model"
 	"github.com/google/uuid"
@@ -141,10 +142,34 @@ func (s *FileStorage) GetByUserID(_ context.Context, userID uuid.UUID) ([]*model
 	defer s.mu.RUnlock()
 
 	for _, item := range s.data {
+		if item.DeletedAt != nil {
+			continue
+		}
 		if item.UserID != nil && *item.UserID == userID {
 			urls = append(urls, item)
 		}
 	}
 
 	return urls, nil
+}
+
+func (s *FileStorage) DeleteByUserIdBatch(_ context.Context, userID uuid.UUID, hashes []string) error {
+	hashSet := make(map[string]struct{}, len(hashes))
+	for _, h := range hashes {
+		hashSet[h] = struct{}{}
+	}
+
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	deletedAt := time.Now()
+	for _, u := range s.data {
+		if u.UserID != nil && *u.UserID == userID {
+			if _, ok := hashSet[u.Hash]; ok {
+				u.DeletedAt = &deletedAt
+			}
+		}
+	}
+
+	return nil
 }

@@ -52,3 +52,7 @@ func (r *FileRepository) FindByOriginalURL(_ context.Context, originalURL string
 func (r *FileRepository) FindAllByUserID(ctx context.Context, userID uuid.UUID) ([]*model.URLEntry, error) {
 	return r.storage.GetByUserID(ctx, userID)
 }
+
+func (r *FileRepository) DeleteByUserIDAndHashes(ctx context.Context, userID uuid.UUID, hashes []string) error {
+	return r.storage.DeleteByUserIdBatch(ctx, userID, hashes)
+}

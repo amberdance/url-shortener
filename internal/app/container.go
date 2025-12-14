@@ -4,6 +4,7 @@ import (
 	"github.com/amberdance/url-shortener/internal/app/usecase"
 	"github.com/amberdance/url-shortener/internal/app/usecase/url"
 	"github.com/amberdance/url-shortener/internal/config"
+	"github.com/amberdance/url-shortener/internal/domain/contracts"
 	"github.com/amberdance/url-shortener/internal/infrastructure/auth"
 )
 
@@ -15,7 +16,7 @@ type Container struct {
 	}
 }
 
-func buildContainer(r RepositoryProvider, cfg *config.Config) *Container {
+func buildContainer(r RepositoryProvider, cfg *config.Config, l contracts.Logger) *Container {
 	rep := r.URLRepository()
 
 	return &Container{
@@ -25,10 +26,11 @@ func buildContainer(r RepositoryProvider, cfg *config.Config) *Container {
 			URL usecase.URLUseCases
 		}{
 			URL: usecase.URLUseCases{
-				Create:      url.NewCreateUseCase(rep),
-				CreateBatch: url.NewBatchCreateURLUseCase(rep),
-				GetByURL:    url.NewGetByHashUseCase(rep),
-				GetByUserID: url.NewGetURLsByUserIDUseCase(rep),
+				Create:              url.NewCreateUseCase(rep),
+				CreateBatch:         url.NewBatchCreateURLUseCase(rep),
+				GetByURL:            url.NewGetByHashUseCase(rep),
+				GetByUserID:         url.NewGetURLsByUserIDUseCase(rep),
+				DeleteByUserIdBatch: url.NewDeleteUserURLsBatchUseCase(rep, l),
 			},
 		},
 	}
