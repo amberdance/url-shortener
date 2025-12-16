@@ -64,6 +64,8 @@ func (a *App) Close() {
 	if a.storage != nil {
 		a.storage.Close()
 	}
+
+	a.container.UseCases.URL.DeleteByUserIDBatchAsync.Shutdown()
 }
 
 func (a *App) init() error {
