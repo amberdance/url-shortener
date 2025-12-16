@@ -17,7 +17,7 @@ func AuthMiddleware(auth *auth.CookieAuth) func(http.Handler) http.Handler {
 			c, err := r.Cookie(CookieUserIDKey)
 
 			if err != nil {
-				userID := uuid.New().String()
+				userID := uuid.NewString()
 				token := auth.Sign(userID)
 
 				http.SetCookie(w, &http.Cookie{
