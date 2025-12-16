@@ -43,6 +43,7 @@ func GzipCompressMiddleware(next http.Handler) http.Handler {
 			}
 			w.WriteHeader(rec.Code)
 			w.Write(rec.Body.Bytes())
+
 			return
 		}
 

@@ -1,34 +1,52 @@
-package url_test
+package url
 
 import (
 	"context"
 	"testing"
 
 	"github.com/amberdance/url-shortener/internal/app/command"
-	urlusecase "github.com/amberdance/url-shortener/internal/app/usecase/url"
 	"github.com/amberdance/url-shortener/internal/infrastructure/repository/url"
 	"github.com/amberdance/url-shortener/internal/infrastructure/storage"
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/suite"
 )
 
-func TestGetByHashUseCase_Run_Success(t *testing.T) {
-	repo := url.NewInMemoryURLRepository(storage.NewInMemoryStorage())
-	create := urlusecase.NewCreateURLUseCase(repo)
-	get := urlusecase.NewGetByHashUseCase(repo)
-	cmd := command.CreateURLEntryCommand{OriginalURL: "https://hard2code.ru"}
+type GetByHashUseCaseTestSuite struct {
+	suite.Suite
+	ctx context.Context
 
-	m, err := create.Run(context.Background(), cmd)
-	assert.NoError(t, err)
-
-	found, err := get.Run(context.Background(), command.GetURLByHashCommand{Hash: m.Hash})
-	assert.NoError(t, err)
-	assert.Equal(t, m, found)
+	useCase       GetByHashUseCase
+	memoryStorage storage.InMemoryStorage
 }
 
-func TestGetByHashUseCase_Run_NotFound(t *testing.T) {
-	repo := url.NewInMemoryURLRepository(storage.NewInMemoryStorage())
-	get := urlusecase.NewGetByHashUseCase(repo)
+func (s *GetByHashUseCaseTestSuite) SetupSuite() {
+	s.ctx = context.Background()
+	s.memoryStorage = *storage.NewInMemoryStorage()
+	s.useCase = NewGetByHashUseCase(url.NewInMemoryURLRepository(&s.memoryStorage))
+}
 
-	_, err := get.Run(context.Background(), command.GetURLByHashCommand{Hash: "none"})
-	assert.Error(t, err)
+func (s *GetByHashUseCaseTestSuite) TearDownTest() {
+	clear(s.memoryStorage.Data)
+}
+
+func TestGetByHashUseCaseTestSuite(t *testing.T) {
+	suite.Run(t, new(GetByHashUseCaseTestSuite))
+}
+
+func (s *GetByHashUseCaseTestSuite) TestEntryNotFound() {
+	hash := "some-hash"
+	entry, err := s.useCase.Run(s.ctx, command.GetURLByHashCommand{
+		Hash: hash,
+	})
+	s.Error(err)
+	s.Empty(entry)
+}
+
+func (s *GetByHashUseCaseTestSuite) TestGetByHashSuccess() {
+	expected := createTestURLEntry()
+	s.memoryStorage.Data[expected.ID] = expected
+	actual, err := s.useCase.Run(s.ctx, command.GetURLByHashCommand{
+		Hash: expected.Hash,
+	})
+	s.NoError(err)
+	s.Equal(expected, actual)
 }

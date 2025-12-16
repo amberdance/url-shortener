@@ -6,18 +6,18 @@ import (
 	"errors"
 	"io"
 	"net/http"
-	"strings"
 	"time"
 
 	"github.com/amberdance/url-shortener/internal/app/command"
 	"github.com/amberdance/url-shortener/internal/app/usecase"
+	"github.com/amberdance/url-shortener/internal/domain/contracts"
 	"github.com/amberdance/url-shortener/internal/domain/errs"
-	"github.com/amberdance/url-shortener/internal/domain/shared"
+	"github.com/amberdance/url-shortener/internal/domain/model"
 	"github.com/amberdance/url-shortener/internal/ports/webapi/dto"
 	"github.com/amberdance/url-shortener/internal/ports/webapi/helpers"
+	"github.com/amberdance/url-shortener/internal/ports/webapi/middleware"
 	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/chi/v5/middleware"
-	"github.com/go-playground/validator/v10"
+	"github.com/google/uuid"
 )
 
 const (
@@ -26,41 +26,54 @@ const (
 )
 
 type URLShortenerHandler struct {
-	baseURL   string
-	usecases  usecase.URLUseCases
-	validator *validator.Validate
-	logger    shared.Logger
+	baseURL  string
+	usecases usecase.URLUseCases
+	logger   contracts.Logger
 }
 
-func NewURLShortenerHandler(host string, uc usecase.URLUseCases, v *validator.Validate, l shared.Logger) *URLShortenerHandler {
-	return &URLShortenerHandler{host, uc, v, l}
+func NewURLShortenerHandler(
+	baseURL string,
+	uc usecase.URLUseCases,
+	l contracts.Logger,
+) *URLShortenerHandler {
+	return &URLShortenerHandler{
+		baseURL:  baseURL,
+		usecases: uc,
+		logger:   l,
+	}
 }
 
 func (h *URLShortenerHandler) Routes() chi.Router {
 	r := chi.NewRouter()
-	r.Use(middleware.Recoverer)
-
-	r.Post("/", h.deprecatedPost)
 	r.Get("/{hash:[a-zA-Z0-9]+}", h.get)
+	r.Post("/", h.plainTextShorten)
 	r.Post("/api/shorten", h.shorten)
 	r.Post("/api/shorten/batch", h.shortenBatch)
+
 	return r
 }
 
 func (h *URLShortenerHandler) shorten(w http.ResponseWriter, r *http.Request) {
 	var req dto.ShortURLRequest
 	_ = json.NewDecoder(r.Body).Decode(&req)
-	helpers.MustValidate(w, h.validator, req)
+
+	validatedURL, err := helpers.ValidateURL(req.URL)
+	if err != nil {
+		helpers.HandleError(w, err)
+		return
+	}
 
 	ctx, cancel := context.WithTimeout(r.Context(), writeRequestTimeout)
 	defer cancel()
 
+	userID, _ := uuid.Parse(helpers.GetUserIDFromRequest(r))
 	m, err := h.usecases.Create.Run(ctx, command.CreateURLEntryCommand{
-		OriginalURL:   req.URL,
+		OriginalURL:   validatedURL,
 		CorrelationID: req.CorrelationID,
+		UserID:        &userID,
 	})
 
-	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Content-Type", middleware.ContentTypeJSONHeaderValue)
 
 	if err != nil {
 		if errors.Is(err, context.DeadlineExceeded) {
@@ -71,16 +84,20 @@ func (h *URLShortenerHandler) shorten(w http.ResponseWriter, r *http.Request) {
 		var conflictErr errs.DuplicateEntryError
 		if errors.As(err, &conflictErr) {
 			w.WriteHeader(http.StatusConflict)
-			json.NewEncoder(w).Encode(dto.ShortURLResponse{URL: h.formatFullURL(m.Hash)})
+			h.writeShortenDto(w, m)
 			return
 		}
 
-		helpers.HandleError(w, errs.ValidationError("Не удалось сформировать ссылку"))
+		helpers.HandleError(w, errs.ErrIncorrectURL)
 		return
 	}
 
 	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(dto.ShortURLResponse{URL: h.formatFullURL(m.Hash)})
+	h.writeShortenDto(w, m)
+}
+
+func (h *URLShortenerHandler) writeShortenDto(w http.ResponseWriter, m *model.URLEntry) {
+	json.NewEncoder(w).Encode(dto.ShortURLResponse{URL: helpers.FormatFullURL(h.baseURL, m.Hash)})
 }
 
 func (h *URLShortenerHandler) shortenBatch(w http.ResponseWriter, r *http.Request) {
@@ -91,42 +108,44 @@ func (h *URLShortenerHandler) shortenBatch(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
+	userID, _ := uuid.Parse(helpers.GetUserIDFromRequest(r))
 	cmd := command.CreateBatchURLEntryCommand{
-		Entries: make([]command.CreateURLEntryCommand, 0, len(reqDto)),
+		Commands: make([]command.CreateURLEntryCommand, 0, len(reqDto)),
 	}
 
 	for _, d := range reqDto {
-		cmd.Entries = append(cmd.Entries, command.CreateURLEntryCommand{
+		cmd.Commands = append(cmd.Commands, command.CreateURLEntryCommand{
 			OriginalURL:   d.URL,
 			CorrelationID: &d.CorrelationID,
+			UserID:        &userID,
 		})
 	}
 
 	ctx, cancel := context.WithTimeout(r.Context(), writeRequestTimeout)
-	urls, err := h.usecases.CreateBatch.Run(ctx, cmd)
 	defer cancel()
 
+	urls, err := h.usecases.CreateBatch.Run(ctx, cmd)
 	if err != nil {
 		if errors.Is(err, context.DeadlineExceeded) {
 			w.WriteHeader(http.StatusGatewayTimeout)
 			return
 		}
 
-		helpers.HandleError(w, errs.InvalidArgumentError("Не удалось создать записи"))
+		helpers.HandleError(w, errs.ErrIncorrectURL)
 		return
 	}
 
 	res := make([]dto.BatchShortenURLResponse, 0, len(reqDto))
-	for _, u := range urls {
+	for _, m := range urls {
 		res = append(res, dto.BatchShortenURLResponse{
-			CorrelationID: *u.CorrelationID,
-			URL:           h.formatFullURL(u.Hash),
+			CorrelationID: *m.CorrelationID,
+			URL:           helpers.FormatFullURL(h.baseURL, m.Hash),
 		})
 	}
 
-	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Content-Type", middleware.ContentTypeJSONHeaderValue)
 	w.WriteHeader(http.StatusCreated)
-	_ = json.NewEncoder(w).Encode(res)
+	json.NewEncoder(w).Encode(res)
 }
 
 func (h *URLShortenerHandler) validateBatchRequest(r *http.Request) ([]dto.BatchShortenURLRequest, error) {
@@ -137,7 +156,7 @@ func (h *URLShortenerHandler) validateBatchRequest(r *http.Request) ([]dto.Batch
 	}
 
 	if len(reqItems) == 0 {
-		return nil, errs.ValidationError("Не передано ни одного url")
+		return nil, errs.ErrEmptyURLSet
 	}
 
 	return reqItems, nil
@@ -146,7 +165,7 @@ func (h *URLShortenerHandler) validateBatchRequest(r *http.Request) ([]dto.Batch
 func (h *URLShortenerHandler) get(w http.ResponseWriter, r *http.Request) {
 	hash := chi.URLParam(r, "hash")
 	if hash == "" {
-		helpers.HandleError(w, errs.ValidationError("Не передана ссылка"))
+		helpers.HandleError(w, errs.ErrIncorrectURL)
 		return
 	}
 
@@ -162,7 +181,7 @@ func (h *URLShortenerHandler) get(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusGatewayTimeout)
 			return
 		}
-		helpers.HandleError(w, errs.NotFoundError("Не найден ресурс"))
+		helpers.HandleError(w, errs.ErrNotFound)
 		return
 	}
 
@@ -170,23 +189,29 @@ func (h *URLShortenerHandler) get(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusTemporaryRedirect)
 }
 
-// @TODO: удалить
-func (h *URLShortenerHandler) deprecatedPost(w http.ResponseWriter, r *http.Request) {
+func (h *URLShortenerHandler) plainTextShorten(w http.ResponseWriter, r *http.Request) {
 	body, err := io.ReadAll(r.Body)
 	defer r.Body.Close()
 	if err != nil || len(body) == 0 {
-		helpers.HandleError(w, errs.ValidationError("Не передан URL"))
+		helpers.HandleError(w, errs.ErrIncorrectURL)
 		return
 	}
 
-	original := strings.TrimSpace(string(body))
-	if original == "" {
-		helpers.HandleError(w, errs.ValidationError("Не передан URL"))
+	validatedURL, err := helpers.ValidateURL(string(body))
+	if err != nil {
+		helpers.HandleError(w, err)
 		return
 	}
+
+	var (
+		requestID = uuid.New().String()
+		userID, _ = uuid.Parse(helpers.GetUserIDFromRequest(r))
+	)
 
 	m, err := h.usecases.Create.Run(r.Context(), command.CreateURLEntryCommand{
-		OriginalURL: original,
+		OriginalURL:   validatedURL,
+		CorrelationID: &requestID,
+		UserID:        &userID,
 	})
 
 	w.Header().Set("Content-Type", "text/plain")
@@ -195,19 +220,15 @@ func (h *URLShortenerHandler) deprecatedPost(w http.ResponseWriter, r *http.Requ
 		var conflictErr errs.DuplicateEntryError
 		if errors.As(err, &conflictErr) {
 			w.WriteHeader(http.StatusConflict)
-			w.Write([]byte(h.formatFullURL(m.Hash)))
+			w.Write([]byte(helpers.FormatFullURL(h.baseURL, m.Hash)))
 			return
 		}
 
 		h.logger.Error(err.Error())
-		helpers.HandleError(w, errs.ValidationError("Не удалось сформировать ссылку"))
+		helpers.HandleError(w, errs.ErrIncorrectURL)
 		return
 	}
 
 	w.WriteHeader(http.StatusCreated)
-	w.Write([]byte(h.formatFullURL(m.Hash)))
-}
-
-func (h *URLShortenerHandler) formatFullURL(hash string) string {
-	return h.baseURL + hash
+	w.Write([]byte(helpers.FormatFullURL(h.baseURL, m.Hash)))
 }

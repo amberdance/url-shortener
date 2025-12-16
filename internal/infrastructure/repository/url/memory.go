@@ -2,55 +2,58 @@ package url
 
 import (
 	"context"
-	"errors"
-	"fmt"
 
 	"github.com/amberdance/url-shortener/internal/domain/errs"
 	"github.com/amberdance/url-shortener/internal/domain/model"
 	"github.com/amberdance/url-shortener/internal/domain/repository"
 	"github.com/amberdance/url-shortener/internal/infrastructure/storage"
+	"github.com/google/uuid"
 )
 
-type inMemoryRepository struct {
+type InMemoryRepository struct {
 	storage *storage.InMemoryStorage
 }
 
-var _ repository.URLRepository = (*inMemoryRepository)(nil)
+var _ repository.URLRepository = (*InMemoryRepository)(nil)
 
 func NewInMemoryURLRepository(s *storage.InMemoryStorage) repository.URLRepository {
-	return &inMemoryRepository{
+	return &InMemoryRepository{
 		storage: s,
 	}
 }
 
-func (r *inMemoryRepository) Create(ctx context.Context, m *model.URL) error {
+func (r *InMemoryRepository) Create(ctx context.Context, m *model.URLEntry) error {
 	existing, _ := r.FindByOriginalURL(ctx, m.OriginalURL)
 	if existing != nil {
-		return errs.DuplicateEntryError("url already exists")
+		return errs.ErrDuplicate
 	}
 
 	r.storage.Mu.Lock()
 	defer r.storage.Mu.Unlock()
 
 	r.storage.Data[m.ID] = m
+
 	return nil
 }
 
-func (r *inMemoryRepository) CreateBatch(_ context.Context, urls []*model.URL) error {
+func (r *InMemoryRepository) CreateBatch(_ context.Context, urls []*model.URLEntry) error {
 	r.storage.Mu.Lock()
 	defer r.storage.Mu.Unlock()
-	for _, u := range urls {
-		if _, ok := r.storage.Data[u.ID]; ok {
-			return fmt.Errorf("duplicate hash: %s", u.Hash)
+
+	for _, u := range r.storage.Data {
+		if u.OriginalURL == u.OriginalURL || u.Hash == u.Hash {
+			return errs.ErrDuplicate
 		}
 	}
+
 	for _, u := range urls {
 		r.storage.Data[u.ID] = u
 	}
+
 	return nil
 }
 
-func (r *inMemoryRepository) FindByHash(_ context.Context, url string) (*model.URL, error) {
+func (r *InMemoryRepository) FindByHash(_ context.Context, url string) (*model.URLEntry, error) {
 	r.storage.Mu.RLock()
 	defer r.storage.Mu.RUnlock()
 
@@ -59,10 +62,11 @@ func (r *inMemoryRepository) FindByHash(_ context.Context, url string) (*model.U
 			return item, nil
 		}
 	}
-	return nil, errors.New("url not found")
+
+	return nil, errs.ErrNotFound
 }
 
-func (r *inMemoryRepository) FindByOriginalURL(_ context.Context, originalURL string) (*model.URL, error) {
+func (r *InMemoryRepository) FindByOriginalURL(_ context.Context, originalURL string) (*model.URLEntry, error) {
 	r.storage.Mu.RLock()
 	defer r.storage.Mu.RUnlock()
 
@@ -73,4 +77,19 @@ func (r *inMemoryRepository) FindByOriginalURL(_ context.Context, originalURL st
 	}
 
 	return nil, nil
+}
+
+func (r *InMemoryRepository) FindAllByUserID(_ context.Context, userID uuid.UUID) ([]*model.URLEntry, error) {
+	var urls []*model.URLEntry
+
+	r.storage.Mu.RLock()
+	defer r.storage.Mu.RUnlock()
+
+	for _, item := range r.storage.Data {
+		if item.UserID != nil && *item.UserID == userID {
+			urls = append(urls, item)
+		}
+	}
+
+	return urls, nil
 }

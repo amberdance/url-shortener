@@ -4,9 +4,11 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"net/url"
+	"strings"
 
+	"github.com/amberdance/url-shortener/internal/app"
 	"github.com/amberdance/url-shortener/internal/domain/errs"
-	"github.com/go-playground/validator/v10"
 )
 
 type ErrorResponse struct {
@@ -45,18 +47,28 @@ func HandleError(w http.ResponseWriter, err error) {
 	})
 }
 
-func Validate(w http.ResponseWriter, v *validator.Validate, dto any) error {
-	err := v.Struct(dto)
-	if err != nil {
-		HandleError(w, errs.ValidationError(err.Error()))
-		return err
-	}
-	return nil
+func FormatFullURL(baseURL string, hash string) string {
+	return baseURL + hash
 }
 
-func MustValidate(w http.ResponseWriter, v *validator.Validate, dto any) {
-	err := Validate(w, v, dto)
-	if err != nil {
-		panic(err)
+func GetUserIDFromRequest(r *http.Request) string {
+	v := r.Context().Value(app.UserCtxKey)
+	if v == nil {
+		return ""
 	}
+	return v.(string)
+}
+
+func ValidateURL(raw string) (string, error) {
+	original := strings.TrimSpace(raw)
+	if original == "" {
+		return "", errs.ErrInvalidURI
+	}
+
+	res, err := url.ParseRequestURI(raw)
+	if err != nil {
+		return "", errs.ErrInvalidURI
+	}
+
+	return res.String(), nil
 }

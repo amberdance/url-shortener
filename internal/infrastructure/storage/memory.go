@@ -9,7 +9,7 @@ import (
 )
 
 type InMemoryStorage struct {
-	Data map[uuid.UUID]*model.URL
+	Data map[uuid.UUID]*model.URLEntry
 	Mu   sync.RWMutex
 }
 
@@ -19,6 +19,6 @@ func (s *InMemoryStorage) Ping(_ context.Context) error {
 
 func NewInMemoryStorage() *InMemoryStorage {
 	return &InMemoryStorage{
-		Data: make(map[uuid.UUID]*model.URL),
+		Data: make(map[uuid.UUID]*model.URLEntry),
 	}
 }

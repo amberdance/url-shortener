@@ -1,0 +1,67 @@
+package handlers
+
+import (
+	"encoding/json"
+	"net/http"
+
+	"github.com/amberdance/url-shortener/internal/app/command"
+	usecase "github.com/amberdance/url-shortener/internal/app/usecase/url"
+	"github.com/amberdance/url-shortener/internal/domain/errs"
+	"github.com/amberdance/url-shortener/internal/ports/webapi/dto"
+	"github.com/amberdance/url-shortener/internal/ports/webapi/helpers"
+	"github.com/amberdance/url-shortener/internal/ports/webapi/middleware"
+	"github.com/go-chi/chi/v5"
+	"github.com/google/uuid"
+)
+
+type UserHandler struct {
+	baseURL                string
+	getURLsByUserIDUseCase usecase.GetURLsByUserIDUseCase
+}
+
+func NewUserHandler(u string, uc usecase.GetURLsByUserIDUseCase) *UserHandler {
+	return &UserHandler{baseURL: u, getURLsByUserIDUseCase: uc}
+}
+
+func (h *UserHandler) Routes() chi.Router {
+	r := chi.NewRouter()
+	r.Get("/urls", h.getAll)
+
+	return r
+}
+
+func (h *UserHandler) getAll(w http.ResponseWriter, r *http.Request) {
+	userID := helpers.GetUserIDFromRequest(r)
+	if userID == "" {
+		helpers.HandleError(w, errs.ErrUnauthorized)
+		return
+	}
+
+	parsedUUID, err := uuid.Parse(userID)
+	if err != nil {
+		helpers.HandleError(w, errs.ErrInvalidUserID)
+		return
+	}
+
+	urls, err := h.getURLsByUserIDUseCase.Run(r.Context(), command.GetUrlsByUserIDCommand{UserID: parsedUUID})
+	if err != nil {
+		helpers.HandleError(w, errs.ErrNotFound)
+		return
+	}
+
+	if len(urls) == 0 {
+		w.WriteHeader(http.StatusNoContent)
+		return
+	}
+
+	result := make([]dto.UserURLsResponse, len(urls))
+	for i, m := range urls {
+		result[i] = dto.UserURLsResponse{
+			ShortURL:    helpers.FormatFullURL(h.baseURL, m.Hash),
+			OriginalURL: m.OriginalURL,
+		}
+	}
+
+	w.Header().Set("Content-Type", middleware.ContentTypeJSONHeaderValue)
+	json.NewEncoder(w).Encode(result)
+}

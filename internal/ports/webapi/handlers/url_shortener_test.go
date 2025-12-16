@@ -7,268 +7,346 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
-	"strings"
 	"testing"
 
-	"github.com/amberdance/url-shortener/internal/app/command"
 	"github.com/amberdance/url-shortener/internal/app/usecase"
 	"github.com/amberdance/url-shortener/internal/app/usecase/url"
+	"github.com/amberdance/url-shortener/internal/domain/errs"
 	"github.com/amberdance/url-shortener/internal/domain/model"
-	"github.com/amberdance/url-shortener/internal/domain/repository"
-	"github.com/amberdance/url-shortener/internal/domain/shared"
-	infr "github.com/amberdance/url-shortener/internal/infrastructure/repository/url"
-	"github.com/amberdance/url-shortener/internal/infrastructure/storage"
+	"github.com/amberdance/url-shortener/internal/infrastructure/helpers"
+	"github.com/amberdance/url-shortener/internal/mocks"
 	"github.com/amberdance/url-shortener/internal/ports/webapi/dto"
-	"github.com/go-playground/validator/v10"
-	"github.com/stretchr/testify/assert"
+	helpers2 "github.com/amberdance/url-shortener/internal/ports/webapi/helpers"
+	"github.com/amberdance/url-shortener/internal/ports/webapi/middleware"
+	"github.com/golang/mock/gomock"
+	"github.com/google/uuid"
+	"github.com/stretchr/testify/suite"
 )
 
-const testHost string = "http://127.0.0.1:9999/"
+type URLShortenerHandlerTestSuite struct {
+	suite.Suite
+	ctx  context.Context
+	ctrl *gomock.Controller
 
-type MockLogger struct{}
-
-func (m MockLogger) Debug(_ string, _ ...any) {}
-func (m MockLogger) Info(_ string, _ ...any)  {}
-func (m MockLogger) Error(_ string, _ ...any) {}
-func (m MockLogger) Close() error             { return nil }
-
-var repo repository.URLRepository
-
-func setupTest() *URLShortenerHandler {
-	var log shared.Logger = MockLogger{}
-
-	repo = infr.NewInMemoryURLRepository(storage.NewInMemoryStorage())
-	useCases := usecase.URLUseCases{
-		Create:      url.NewCreateURLUseCase(repo),
-		CreateBatch: url.NewBatchCreateURLUseCase(repo),
-		GetByURL:    url.NewGetByHashUseCase(repo),
-	}
-	return NewURLShortenerHandler(testHost, useCases, validator.New(), log)
+	host       string
+	repository *mocks.MockURLRepository
+	handler    *URLShortenerHandler
 }
 
-func TestPost_Success(t *testing.T) {
-	h := setupTest()
-	req := httptest.NewRequest(http.MethodPost, "/", bytes.NewBufferString("https://hard2code.ru"))
-	w := httptest.NewRecorder()
+func (s *URLShortenerHandlerTestSuite) SetupTest() {
+	s.ctx = context.Background()
+	s.ctrl = gomock.NewController(s.T())
+	s.host = "http://127.0.0.1:9999/"
+	s.repository = mocks.NewMockURLRepository(s.ctrl)
+	useCases := usecase.URLUseCases{
+		Create:      url.NewCreateUseCase(s.repository),
+		CreateBatch: url.NewBatchCreateURLUseCase(s.repository),
+		GetByURL:    url.NewGetByHashUseCase(s.repository),
+	}
+	s.handler = NewURLShortenerHandler(s.host, useCases, mocks.NewMockLogger(s.ctrl))
+}
 
-	h.Routes().ServeHTTP(w, req)
+func (s *URLShortenerHandlerTestSuite) TearDownSuite() {
+	s.ctrl.Finish()
+}
+
+func TestURLShortenerHandlerTestSuite(t *testing.T) {
+	suite.Run(t, new(URLShortenerHandlerTestSuite))
+}
+
+func (s *URLShortenerHandlerTestSuite) TestShortedPlainTextPost_Success() {
+	var (
+		originalURL  = "https://hard2code.ru"
+		expectedHash = "hash"
+	)
+
+	s.repository.EXPECT().
+		Create(gomock.Any(), gomock.AssignableToTypeOf(&model.URLEntry{})).
+		DoAndReturn(func(_ context.Context, m *model.URLEntry) error {
+			m.Hash = expectedHash
+			return nil
+		}).
+		Times(1)
+
+	req := httptest.NewRequest(http.MethodPost, "/", bytes.NewBufferString(originalURL))
+	w := httptest.NewRecorder()
+	s.handler.Routes().ServeHTTP(w, req)
+
 	res := w.Result()
 	defer res.Body.Close()
 
-	if res.StatusCode != http.StatusCreated {
-		t.Fatalf("expected 201, got %d", res.StatusCode)
-	}
+	s.Equal(http.StatusCreated, res.StatusCode)
+	s.Equal("text/plain", res.Header.Get("Content-Type"))
 
-	respBody, _ := io.ReadAll(res.Body)
-	if !strings.HasPrefix(string(respBody), testHost) {
-		t.Errorf("unexpected response: %s", respBody)
-	}
+	body, err := io.ReadAll(res.Body)
+	s.NoError(err)
+
+	expected := s.host + expectedHash
+	s.Equal(expected, string(body))
 }
 
-func TestPost_BadRequest(t *testing.T) {
-	h := setupTest()
-	router := h.Routes()
-
-	tests := []struct {
-		name string
-		body io.Reader
-	}{
-		{"empty body", bytes.NewBuffer(nil)},
-		{"spaces only", bytes.NewBufferString("   ")},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+func (s *URLShortenerHandlerTestSuite) Test_When_RequestPayloadInvalid_Then_ShortenPlainTextPost_ShouldReturn400HttpCode() {
+	for _, tt := range invalidPayloadCases {
+		s.T().Run(tt.name, func(t *testing.T) {
 			req := httptest.NewRequest(http.MethodPost, "/", tt.body)
 			w := httptest.NewRecorder()
-			router.ServeHTTP(w, req)
+			s.handler.Routes().ServeHTTP(w, req)
+
 			res := w.Result()
 			defer res.Body.Close()
 
-			if res.StatusCode != http.StatusBadRequest {
-				t.Errorf("[%s] expected 400, got %d", tt.name, res.StatusCode)
-			}
+			s.Equal(http.StatusBadRequest, res.StatusCode)
 		})
 	}
 }
 
-func TestGet_Success(t *testing.T) {
-	h := setupTest()
-	router := h.Routes()
+func (s *URLShortenerHandlerTestSuite) Test_When_RequestPayloadInvalid_Then_Shorten_ShouldReturn400HttpCode() {
+	for _, tt := range invalidPayloadCases {
+		s.T().Run(tt.name, func(t *testing.T) {
 
-	ctx := context.Background()
-	entry, err := h.usecases.Create.Run(ctx, command.CreateURLEntryCommand{OriginalURL: "https://hard2code.ru"})
-	if err != nil {
-		t.Fatalf("create failed: %v", err)
-	}
+			req := httptest.NewRequest(http.MethodPost, "/api/shorten", bytes.NewBuffer(tt.json))
+			w := httptest.NewRecorder()
+			s.handler.Routes().ServeHTTP(w, req)
 
-	req := httptest.NewRequest(http.MethodGet, "/"+entry.Hash, nil)
-	w := httptest.NewRecorder()
-	router.ServeHTTP(w, req)
+			res := w.Result()
+			defer res.Body.Close()
 
-	res := w.Result()
-	defer res.Body.Close()
-
-	if res.StatusCode != http.StatusTemporaryRedirect {
-		t.Fatalf("expected 307, got %d", res.StatusCode)
-	}
-
-	if res.Header.Get("Location") != "https://hard2code.ru" {
-		t.Errorf("expected redirect to https://hard2code.ru, got %s", res.Header.Get("Location"))
+			s.Equal(http.StatusBadRequest, res.StatusCode)
+		})
 	}
 }
 
-func TestGet_NotFound(t *testing.T) {
-	h := setupTest()
-	router := h.Routes()
-
-	req := httptest.NewRequest(http.MethodGet, "/notfound", nil)
-	w := httptest.NewRecorder()
-	router.ServeHTTP(w, req)
-	res := w.Result()
-	defer res.Body.Close()
-
-	if res.StatusCode != http.StatusNotFound {
-		t.Errorf("expected 404, got %d", res.StatusCode)
-	}
+var invalidPayloadCases = []struct {
+	name string
+	body io.Reader
+	json []byte
+}{
+	{name: "Nil payload", body: bytes.NewBuffer(nil), json: []byte(`{"url": null}`)},
+	{name: "Only spaces", body: bytes.NewBufferString("   "), json: []byte(`{"url": "   "}`)},
+	{name: "Empty payload", body: bytes.NewBufferString(""), json: []byte(`{"url": ""}`)},
 }
 
-func TestShorten_Success(t *testing.T) {
-	h := setupTest()
-	router := h.Routes()
+func (s *URLShortenerHandlerTestSuite) TestShorten_Success() {
+	var (
+		originalURL = "https://hard2code.ru"
+		entry       = &model.URLEntry{
+			ID:          uuid.New(),
+			Hash:        helpers.GenerateHash(),
+			OriginalURL: originalURL,
+		}
+		reqDto = dto.ShortURLRequest{
+			URL: originalURL,
+		}
+	)
 
-	body := `{"url":"https://hard2code.ru"}`
-	req := httptest.NewRequest(http.MethodPost, "/api/shorten", bytes.NewBufferString(body))
-	req.Header.Set("Content-Type", "application/json")
+	body, err := json.Marshal(reqDto)
+	s.NoError(err)
 
+	s.repository.EXPECT().
+		Create(gomock.Any(), gomock.AssignableToTypeOf(&model.URLEntry{})).
+		DoAndReturn(func(_ context.Context, m *model.URLEntry) error {
+			m.ID = entry.ID
+			m.Hash = entry.Hash
+			m.OriginalURL = originalURL
+
+			return nil
+		}).
+		Times(1)
+
+	req := httptest.NewRequest(http.MethodPost, "/api/shorten", bytes.NewBuffer(body))
 	w := httptest.NewRecorder()
-	router.ServeHTTP(w, req)
+	s.handler.Routes().ServeHTTP(w, req)
+
 	res := w.Result()
 	defer res.Body.Close()
 
-	assert.Equal(t, http.StatusCreated, res.StatusCode)
-	assert.Equal(t, "application/json", res.Header.Get("Content-Type"))
+	s.Equal(http.StatusCreated, res.StatusCode)
+	s.Equal(middleware.ContentTypeJSONHeaderValue, res.Header.Get("Content-Type"))
+
+	body, err = io.ReadAll(res.Body)
+	s.NoError(err)
+
+	var response dto.ShortURLResponse
+	s.NoError(json.Unmarshal(body, &response))
+	s.Equal(response.URL, s.host+entry.Hash)
+}
+
+func (s *URLShortenerHandlerTestSuite) Test_When_URLWithGivenHashDoesNotExists_Then_GetShouldReturn404HttpCode() {
+	hash := helpers.GenerateHash()
+
+	s.repository.EXPECT().
+		FindByHash(gomock.Any(), hash).
+		Return(nil, errs.ErrNotFound).
+		Times(1)
+
+	w := httptest.NewRecorder()
+	s.handler.Routes().ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/"+hash, nil))
+	res := w.Result()
+	defer res.Body.Close()
+
+	s.Equal(http.StatusNotFound, res.StatusCode)
+}
+
+func (s *URLShortenerHandlerTestSuite) setupMockFor409HttCode(originalURL string, hash string) {
+	s.repository.EXPECT().
+		Create(gomock.Any(), gomock.AssignableToTypeOf(&model.URLEntry{})).
+		Return(errs.ErrDuplicate).
+		Times(1)
+
+	s.repository.EXPECT().
+		FindByOriginalURL(gomock.Any(), originalURL).
+		DoAndReturn(func(_ context.Context, originalURL string) (*model.URLEntry, error) {
+			return &model.URLEntry{
+					OriginalURL: originalURL,
+					Hash:        hash,
+				},
+				nil
+		}).
+		Times(1)
+}
+
+func (s *URLShortenerHandlerTestSuite) Test_When_URLExists_Then_ShortenShouldReturn409HttpCodeAndURL() {
+	var (
+		originalURL = "https://hard2code.ru"
+		hash        = helpers.GenerateHash()
+		req         = dto.ShortURLRequest{
+			URL: originalURL,
+		}
+	)
+
+	s.setupMockFor409HttCode(originalURL, hash)
+
+	body, err := json.Marshal(req)
+	s.NoError(err)
+
+	w := httptest.NewRecorder()
+	s.handler.Routes().ServeHTTP(w, httptest.NewRequest(http.MethodPost, "/api/shorten", bytes.NewBuffer(body)))
+	res := w.Result()
+	defer res.Body.Close()
+
+	s.Equal(http.StatusConflict, res.StatusCode)
 
 	var resp dto.ShortURLResponse
-	err := json.NewDecoder(res.Body).Decode(&resp)
-	assert.NoError(t, err)
+	body, err = io.ReadAll(res.Body)
+	err = json.Unmarshal(body, &resp)
+
+	s.NoError(err)
+	s.Equal(s.host+hash, resp.URL)
 }
 
-//func TestShortenJSON_BadRequest(t *testing.T) {
-//	h := setupTest()
-//	router := h.Routes()
-//
-//	tests := []struct {
-//		name string
-//		body string
-//	}{
-//		{"null field", `{"url":null}`},
-//		{"empty string", `{"url":""}`},
-//		{"spaces", `{"url":"   "}`},
-//	}
-//
-//	for _, tt := range tests {
-//		t.Run(tt.name, func(t *testing.T) {
-//			req := httptest.NewRequest(http.MethodPost, "/api/shorten", bytes.NewBufferString(tt.body))
-//			req.Header.Set("Content-Type", "application/json")
-//
-//			w := httptest.NewRecorder()
-//			router.ServeHTTP(w, req)
-//
-//			assert.Panics(t, func() {
-//				res := w.Result()
-//				defer res.Body.Close()
-//			})
-//
-//			//assert.Equal(t, http.StatusBadRequest, res.StatusCode)
-//		})
-//	}
-//}
+func (s *URLShortenerHandlerTestSuite) Test_When_URLExists_Then_ShortenPlainTextShouldReturn409HttpCodeAndURL() {
+	var (
+		originalURL = "https://hard2code.ru"
+		hash        = helpers.GenerateHash()
+	)
 
-func TestShortenBatch_Success(t *testing.T) {
-	h := setupTest()
-	router := h.Routes()
+	s.setupMockFor409HttCode(originalURL, hash)
 
-	body := `[
+	w := httptest.NewRecorder()
+	s.handler.Routes().ServeHTTP(w, httptest.NewRequest(http.MethodPost, "/", bytes.NewBufferString(originalURL)))
+	res := w.Result()
+	defer res.Body.Close()
+
+	s.Equal(http.StatusConflict, res.StatusCode)
+
+	body, err := io.ReadAll(res.Body)
+	s.NoError(err)
+	s.Equal(s.host+hash, string(body))
+}
+
+func (s *URLShortenerHandlerTestSuite) Test_ShortenBatch_Success() {
+	var (
+		dtos = []dto.BatchShortenURLRequest{
 			{
-				"original_url": "https://google.com",
-				"correlation_id": "11111111-1111-1111-1111-111111111111"
+				URL:           "https://google.com",
+				CorrelationID: uuid.New().String(),
 			},
 			{
-				"original_url": "https://hard2code.ru",
-				"correlation_id": "22222222-2222-2222-2222-222222222222"
-			}
-		]`
+				URL:           "https://hard2code.ru",
+				CorrelationID: uuid.New().String(),
+			},
+		}
+		expectedURLs = []model.URLEntry{
+			{
+				ID:            uuid.New(),
+				OriginalURL:   dtos[0].URL,
+				CorrelationID: &dtos[0].CorrelationID,
+				Hash:          helpers.GenerateHash(),
+			},
+			{
+				ID:            uuid.New(),
+				OriginalURL:   dtos[1].URL,
+				CorrelationID: &dtos[1].CorrelationID,
+				Hash:          helpers.GenerateHash(),
+			},
+		}
+	)
 
-	req := httptest.NewRequest(http.MethodPost, "/api/shorten/batch", bytes.NewBufferString(body))
-	req.Header.Set("Content-Type", "application/json")
+	body, err := json.Marshal(dtos)
+	s.NoError(err)
+
+	s.repository.EXPECT().
+		CreateBatch(gomock.Any(), gomock.AssignableToTypeOf([]*model.URLEntry{})).
+		DoAndReturn(func(_ context.Context, m []*model.URLEntry) error {
+			m[0].Hash = expectedURLs[0].Hash
+			m[1].Hash = expectedURLs[1].Hash
+
+			return nil
+		}).
+		Times(1)
 
 	w := httptest.NewRecorder()
-	router.ServeHTTP(w, req)
+	s.handler.Routes().ServeHTTP(w, httptest.NewRequest(http.MethodPost, "/api/shorten/batch", bytes.NewBuffer(body)))
 	res := w.Result()
 	defer res.Body.Close()
 
-	assert.Equal(t, http.StatusCreated, res.StatusCode)
-	assert.Equal(t, "application/json", res.Header.Get("Content-Type"))
+	s.Equal(http.StatusCreated, res.StatusCode)
+
+	body, err = io.ReadAll(res.Body)
+	s.NoError(err)
 
 	var resp []dto.BatchShortenURLResponse
-	err := json.NewDecoder(res.Body).Decode(&resp)
-	assert.NoError(t, err)
+	err = json.Unmarshal(body, &resp)
+	s.NoError(err)
 
-	assert.Len(t, resp, 2)
-
-	var dtos []dto.BatchShortenURLRequest
-	json.NewDecoder(res.Body).Decode(&dtos)
-
-	for i := range dtos {
-		assert.Equal(t, dtos[i], resp[0].CorrelationID)
-		assert.NotEmpty(t, resp[0].URL)
+	for i, r := range resp {
+		s.Equal(s.host+expectedURLs[i].Hash, r.URL)
+		s.Equal(*expectedURLs[i].CorrelationID, r.CorrelationID)
 	}
 }
 
-func TestShortenBatch_422Error(t *testing.T) {
-	h := setupTest()
-	router := h.Routes()
-
-	body := `[
-			
-		]`
-
-	req := httptest.NewRequest(http.MethodPost, "/api/shorten/batch", bytes.NewBufferString(body))
-	req.Header.Set("Content-Type", "application/json")
-
-	w := httptest.NewRecorder()
-	router.ServeHTTP(w, req)
-	res := w.Result()
-	defer res.Body.Close()
-
-	assert.Equal(t, http.StatusUnprocessableEntity, res.StatusCode)
-}
-
-func TestShorten_409Error(t *testing.T) {
-	h := setupTest()
-	router := h.Routes()
-
-	existing := &model.URL{
-		OriginalURL: "https://hard2code.ru",
-		Hash:        "hash",
+func (s *URLShortenerHandlerTestSuite) Test_When_URLOrCorrelationIDExists_Then_ShortenBatchShouldReturn400HttpCode() {
+	dtos := []dto.BatchShortenURLRequest{
+		{
+			URL:           "https://google.com",
+			CorrelationID: uuid.New().String(),
+		},
+		{
+			URL:           "https://hard2code.ru",
+			CorrelationID: uuid.New().String(),
+		},
 	}
-	err := repo.Create(context.Background(), existing)
-	assert.NoError(t, err)
 
-	body := `{"url":"https://hard2code.ru"}`
-	req := httptest.NewRequest(http.MethodPost, "/api/shorten", bytes.NewBufferString(body))
-	req.Header.Set("Content-Type", "application/json")
+	body, err := json.Marshal(dtos)
+	s.NoError(err)
+
+	s.repository.EXPECT().
+		CreateBatch(gomock.Any(), gomock.AssignableToTypeOf([]*model.URLEntry{})).
+		Return(errs.ErrDuplicate).
+		Times(1)
 
 	w := httptest.NewRecorder()
-	router.ServeHTTP(w, req)
+	s.handler.Routes().ServeHTTP(w, httptest.NewRequest(http.MethodPost, "/api/shorten/batch", bytes.NewBuffer(body)))
 	res := w.Result()
 	defer res.Body.Close()
 
-	assert.Equal(t, http.StatusConflict, res.StatusCode)
-	assert.Equal(t, "application/json", res.Header.Get("Content-Type"))
+	s.Equal(http.StatusBadRequest, res.StatusCode)
 
-	var resp dto.ShortURLResponse
-	json.NewDecoder(res.Body).Decode(&resp)
-	assert.Equal(t, h.baseURL+existing.Hash, resp.URL)
+	body, err = io.ReadAll(res.Body)
+	s.NoError(err)
+
+	var resp helpers2.ErrorResponse
+	err = json.Unmarshal(body, &resp)
+	s.Equal(resp.ID, errs.ErrIncorrectURL.ID())
+	s.Equal(resp.Message, errs.ErrIncorrectURL.Error())
 }
