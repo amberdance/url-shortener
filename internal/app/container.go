@@ -4,7 +4,7 @@ import (
 	"github.com/amberdance/url-shortener/internal/app/usecase"
 	"github.com/amberdance/url-shortener/internal/app/usecase/url"
 	"github.com/amberdance/url-shortener/internal/config"
-	"github.com/amberdance/url-shortener/internal/domain/contracts"
+	"github.com/amberdance/url-shortener/internal/domain/ports"
 	"github.com/amberdance/url-shortener/internal/infrastructure/auth"
 )
 
@@ -16,7 +16,7 @@ type Container struct {
 	}
 }
 
-func buildContainer(r RepositoryProvider, cfg *config.Config, l contracts.Logger) *Container {
+func buildContainer(r RepositoryProvider, cfg *config.Config, l ports.Logger) *Container {
 	rep := r.URLRepository()
 
 	return &Container{

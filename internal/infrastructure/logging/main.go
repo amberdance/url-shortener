@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/amberdance/url-shortener/internal/config"
-	"github.com/amberdance/url-shortener/internal/domain/contracts"
+	"github.com/amberdance/url-shortener/internal/domain/ports"
 	"github.com/lmittmann/tint"
 )
 
@@ -16,7 +16,7 @@ type Logger struct {
 	logs []*slog.Logger
 }
 
-var _ contracts.Logger = (*Logger)(nil)
+var _ ports.Logger = (*Logger)(nil)
 
 func NewLogger() *Logger {
 	cfg := config.GetConfig()

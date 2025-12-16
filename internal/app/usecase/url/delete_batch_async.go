@@ -6,20 +6,20 @@ import (
 	"time"
 
 	"github.com/amberdance/url-shortener/internal/app/command"
-	"github.com/amberdance/url-shortener/internal/domain/contracts"
+	"github.com/amberdance/url-shortener/internal/domain/ports"
 	"github.com/amberdance/url-shortener/internal/domain/repository"
 )
 
 type DeleteUserURLsBatchAsyncUseCase struct {
 	repository repository.URLRepository
-	logger     contracts.Logger
+	logger     ports.Logger
 	ch         chan command.DeleteUserURLSCommand
 	stopCh     chan struct{}
 	wg         *sync.WaitGroup
 	once       *sync.Once
 }
 
-func NewDeleteUserURLsBatchAsyncUseCase(repo repository.URLRepository, l contracts.Logger) DeleteUserURLsBatchAsyncUseCase {
+func NewDeleteUserURLsBatchAsyncUseCase(repo repository.URLRepository, l ports.Logger) DeleteUserURLsBatchAsyncUseCase {
 	uc := DeleteUserURLsBatchAsyncUseCase{
 		repository: repo,
 		logger:     l,

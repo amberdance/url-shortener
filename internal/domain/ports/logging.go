@@ -1,4 +1,4 @@
-package contracts
+package ports
 
 //go:generate mockgen -source=$GOFILE -destination=../../mocks/logger_mock.go -package=mocks
 type Logger interface {
