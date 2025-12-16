@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"github.com/amberdance/url-shortener/internal/app"
-	"github.com/amberdance/url-shortener/internal/domain/contracts"
+	"github.com/amberdance/url-shortener/internal/domain/ports"
 	"github.com/amberdance/url-shortener/internal/ports/webapi/handlers"
 	mdw "github.com/amberdance/url-shortener/internal/ports/webapi/middleware"
 
@@ -22,7 +22,7 @@ import (
 
 type Server struct {
 	httpServer *http.Server
-	logger     contracts.Logger
+	logger     ports.Logger
 }
 
 func NewServer(a *app.App) *Server {
@@ -93,14 +93,8 @@ func buildRoutes(a *app.App) *chi.Mux {
 		r.Use(mdw.GzipCompressMiddleware)
 		r.Use(mdw.AuthMiddleware(cont.Auth))
 
-		r.Mount("/", handlers.NewURLShortenerHandler(
-			baseURL,
-			cont.UseCases.URL,
-			a.Logger()).
-			Routes(),
-		)
-
-		r.Mount("/api/user", handlers.NewUserHandler(baseURL, cont.UseCases.URL.GetByUserID).Routes())
+		r.Mount("/", handlers.NewURLShortenerHandler(baseURL, cont.UseCases.URL).Routes())
+		r.Mount("/api/user", handlers.NewUserHandler(baseURL, cont.UseCases.URL.GetByUserID, cont.UseCases.URL.DeleteByUserIDBatchAsync).Routes())
 	})
 
 	return router

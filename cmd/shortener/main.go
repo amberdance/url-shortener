@@ -10,6 +10,7 @@ import (
 
 func main() {
 	a, err := app.GetApp()
+
 	if err != nil {
 		log.Fatalln(err)
 	}

@@ -3,15 +3,15 @@ package handlers
 import (
 	"net/http"
 
-	"github.com/amberdance/url-shortener/internal/domain/contracts"
+	"github.com/amberdance/url-shortener/internal/domain/ports"
 	"github.com/go-chi/chi/v5"
 )
 
 type PingHandler struct {
-	pinger contracts.Pinger
+	pinger ports.Pinger
 }
 
-func NewPingHandler(s contracts.Pinger) *PingHandler {
+func NewPingHandler(s ports.Pinger) *PingHandler {
 	return &PingHandler{pinger: s}
 }
 
@@ -19,7 +19,7 @@ func (h *PingHandler) Routes() chi.Router {
 	r := chi.NewRouter()
 	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
 		if err := h.pinger.Ping(r.Context()); err != nil {
-			http.Error(w, "db not available", http.StatusInternalServerError)
+			http.Error(w, "not available", http.StatusServiceUnavailable)
 			return
 		}
 		w.WriteHeader(http.StatusOK)

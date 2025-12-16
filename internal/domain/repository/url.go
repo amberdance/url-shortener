@@ -14,4 +14,5 @@ type URLRepository interface {
 	FindByHash(ctx context.Context, hash string) (*model.URLEntry, error)
 	FindByOriginalURL(ctx context.Context, originalURL string) (*model.URLEntry, error)
 	FindAllByUserID(ctx context.Context, userID uuid.UUID) ([]*model.URLEntry, error)
+	DeleteByUserIDAndHashes(ctx context.Context, userID uuid.UUID, hashes []string) error
 }

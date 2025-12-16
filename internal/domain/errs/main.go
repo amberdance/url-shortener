@@ -8,4 +8,5 @@ var (
 	ErrInvalidURI    = ValidationError("некорректный URI")
 	ErrIncorrectURL  = ValidationError("не удалось сформировать ссылку")
 	ErrEmptyURLSet   = ValidationError("не передано ни одного url")
+	ErrEmptyHashSet  = ValidationError("отсутствуют короткие ссылки")
 )

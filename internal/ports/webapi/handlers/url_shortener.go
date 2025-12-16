@@ -10,7 +10,6 @@ import (
 
 	"github.com/amberdance/url-shortener/internal/app/command"
 	"github.com/amberdance/url-shortener/internal/app/usecase"
-	"github.com/amberdance/url-shortener/internal/domain/contracts"
 	"github.com/amberdance/url-shortener/internal/domain/errs"
 	"github.com/amberdance/url-shortener/internal/domain/model"
 	"github.com/amberdance/url-shortener/internal/ports/webapi/dto"
@@ -28,18 +27,12 @@ const (
 type URLShortenerHandler struct {
 	baseURL  string
 	usecases usecase.URLUseCases
-	logger   contracts.Logger
 }
 
-func NewURLShortenerHandler(
-	baseURL string,
-	uc usecase.URLUseCases,
-	l contracts.Logger,
-) *URLShortenerHandler {
+func NewURLShortenerHandler(baseURL string, uc usecase.URLUseCases) *URLShortenerHandler {
 	return &URLShortenerHandler{
 		baseURL:  baseURL,
 		usecases: uc,
-		logger:   l,
 	}
 }
 
@@ -47,8 +40,10 @@ func (h *URLShortenerHandler) Routes() chi.Router {
 	r := chi.NewRouter()
 	r.Get("/{hash:[a-zA-Z0-9]+}", h.get)
 	r.Post("/", h.plainTextShorten)
-	r.Post("/api/shorten", h.shorten)
-	r.Post("/api/shorten/batch", h.shortenBatch)
+	r.Route("/api/shorten", func(r chi.Router) {
+		r.Post("/", h.shorten)
+		r.Post("/batch", h.shortenBatch)
+	})
 
 	return r
 }
@@ -185,6 +180,11 @@ func (h *URLShortenerHandler) get(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if m.DeletedAt != nil {
+		w.WriteHeader(http.StatusGone)
+		return
+	}
+
 	w.Header().Set("Location", m.OriginalURL)
 	w.WriteHeader(http.StatusTemporaryRedirect)
 }
@@ -224,7 +224,6 @@ func (h *URLShortenerHandler) plainTextShorten(w http.ResponseWriter, r *http.Re
 			return
 		}
 
-		h.logger.Error(err.Error())
 		helpers.HandleError(w, errs.ErrIncorrectURL)
 		return
 	}

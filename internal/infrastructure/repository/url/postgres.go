@@ -4,8 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"strings"
 
+	"github.com/Masterminds/squirrel"
 	"github.com/amberdance/url-shortener/internal/domain/errs"
 	"github.com/amberdance/url-shortener/internal/domain/model"
 	"github.com/google/uuid"
@@ -14,34 +14,30 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-var dbFields = []string{
-	"id",
-	"created_at",
-	"updated_at",
-	"hash",
-	"original_url",
-	"correlation_id",
-}
-
-func getFormattedSelectFields() string {
-	return strings.Join(dbFields, ", ")
-}
-
 type Mapper interface {
 	Scan(dest ...any) error
 }
 
 type PostgresRepository struct {
-	pool *pgxpool.Pool
+	pool    *pgxpool.Pool
+	builder squirrel.StatementBuilderType
 }
 
 func NewPostgresURLRepository(pool *pgxpool.Pool) *PostgresRepository {
-	return &PostgresRepository{pool: pool}
+	return &PostgresRepository{
+		pool:    pool,
+		builder: squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar),
+	}
 }
 
 func (r *PostgresRepository) Create(ctx context.Context, m *model.URLEntry) error {
+	q, _, _ := r.builder.Insert("urls").
+		Columns("id", "created_at", "hash", "original_url", "correlation_id", "user_id").
+		Values(m.ID, m.CreatedAt, m.Hash, m.OriginalURL, m.CorrelationID, m.UserID).
+		ToSql()
+
 	_, err := r.pool.Exec(ctx,
-		"insert into urls (id, created_at, hash, original_url, correlation_id, user_id) values ($1, $2, $3, $4, $5, $6)",
+		q,
 		m.ID,
 		m.CreatedAt,
 		m.Hash,
@@ -98,23 +94,33 @@ func (r *PostgresRepository) CreateBatch(ctx context.Context, urls []*model.URLE
 }
 
 func (r *PostgresRepository) FindByHash(ctx context.Context, hash string) (*model.URLEntry, error) {
-	return r.mapToModel(r.pool.QueryRow(ctx, "select "+getFormattedSelectFields()+" from urls where hash = $1", hash))
+	q, _, _ := r.builder.Select("id, user_id, created_at, updated_at, hash, original_url, correlation_id, deleted_at").
+		From("urls").
+		Where(squirrel.Eq{"hash": hash}).
+		Limit(1).
+		ToSql()
+
+	return r.mapToModel(r.pool.QueryRow(ctx, q, hash))
 }
 
 func (r *PostgresRepository) FindByOriginalURL(ctx context.Context, original string) (*model.URLEntry, error) {
-	return r.mapToModel(r.pool.QueryRow(
-		ctx,
-		"select "+getFormattedSelectFields()+" from urls  where original_url = $1 limit 1",
-		original,
-	))
+	q, _, _ := r.builder.Select("id, user_id, created_at, updated_at, hash, original_url, correlation_id, deleted_at").
+		From("urls").
+		Where(squirrel.Eq{"original_url": "$1"}).
+		Limit(1).
+		ToSql()
+
+	return r.mapToModel(r.pool.QueryRow(ctx, q, original))
 }
 
 func (r *PostgresRepository) FindAllByUserID(ctx context.Context, userID uuid.UUID) ([]*model.URLEntry, error) {
-	rows, err := r.pool.Query(
-		ctx,
-		"select "+getFormattedSelectFields()+" from urls where user_id=$1",
-		userID,
-	)
+	q, _, _ := r.builder.Select("id, user_id, created_at, updated_at, hash, original_url, correlation_id, deleted_at").
+		From("urls").
+		Where(squirrel.Eq{"user_id": userID}).
+		Where("deleted_at is null").
+		ToSql()
+
+	rows, err := r.pool.Query(ctx, q, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -133,15 +139,28 @@ func (r *PostgresRepository) FindAllByUserID(ctx context.Context, userID uuid.UU
 	return result, nil
 }
 
+func (r *PostgresRepository) DeleteByUserIDAndHashes(ctx context.Context, userID uuid.UUID, hashes []string) error {
+	q, _, _ := r.builder.Update("urls").
+		Set("deleted_at", squirrel.Expr("now()")).
+		Where(squirrel.Eq{"user_id": userID}).
+		Where("hash = any ($2)").
+		ToSql()
+	_, err := r.pool.Exec(ctx, q, userID, hashes)
+
+	return err
+}
+
 func (r *PostgresRepository) mapToModel(mapper Mapper) (*model.URLEntry, error) {
 	var m model.URLEntry
 	err := mapper.Scan(
 		&m.ID,
+		&m.UserID,
 		&m.CreatedAt,
 		&m.UpdatedAt,
 		&m.Hash,
 		&m.OriginalURL,
 		&m.CorrelationID,
+		&m.DeletedAt,
 	)
 
 	if err != nil {

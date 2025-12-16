@@ -16,6 +16,7 @@ type URLEntry struct {
 	UserID        *uuid.UUID
 	CreatedAt     time.Time
 	UpdatedAt     *time.Time
+	DeletedAt     *time.Time
 }
 
 func NewURLEntry(original string, hash string, correlationID *string, userID *uuid.UUID) (*URLEntry, error) {

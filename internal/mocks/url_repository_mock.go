@@ -64,6 +64,20 @@ func (mr *MockURLRepositoryMockRecorder) CreateBatch(ctx, urls interface{}) *gom
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateBatch", reflect.TypeOf((*MockURLRepository)(nil).CreateBatch), ctx, urls)
 }
 
+// DeleteByUserIDAndHashes mocks base method.
+func (m *MockURLRepository) DeleteByUserIDAndHashes(ctx context.Context, userID uuid.UUID, hashes []string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteByUserIDAndHashes", ctx, userID, hashes)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteByUserIDAndHashes indicates an expected call of DeleteByUserIDAndHashes.
+func (mr *MockURLRepositoryMockRecorder) DeleteByUserIDAndHashes(ctx, userID, hashes interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteByUserIDAndHashes", reflect.TypeOf((*MockURLRepository)(nil).DeleteByUserIDAndHashes), ctx, userID, hashes)
+}
+
 // FindAllByUserID mocks base method.
 func (m *MockURLRepository) FindAllByUserID(ctx context.Context, userID uuid.UUID) ([]*model.URLEntry, error) {
 	m.ctrl.T.Helper()

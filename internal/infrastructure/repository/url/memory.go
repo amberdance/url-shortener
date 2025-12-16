@@ -2,6 +2,7 @@ package url
 
 import (
 	"context"
+	"time"
 
 	"github.com/amberdance/url-shortener/internal/domain/errs"
 	"github.com/amberdance/url-shortener/internal/domain/model"
@@ -40,8 +41,13 @@ func (r *InMemoryRepository) CreateBatch(_ context.Context, urls []*model.URLEnt
 	r.storage.Mu.Lock()
 	defer r.storage.Mu.Unlock()
 
+	urlsMap := make(map[string]model.URLEntry)
+	for _, url := range urls {
+		urlsMap[url.OriginalURL] = *url
+	}
+
 	for _, u := range r.storage.Data {
-		if u.OriginalURL == u.OriginalURL || u.Hash == u.Hash {
+		if _, ok := urlsMap[u.OriginalURL]; ok {
 			return errs.ErrDuplicate
 		}
 	}
@@ -86,10 +92,34 @@ func (r *InMemoryRepository) FindAllByUserID(_ context.Context, userID uuid.UUID
 	defer r.storage.Mu.RUnlock()
 
 	for _, item := range r.storage.Data {
+		if item.DeletedAt != nil {
+			continue
+		}
 		if item.UserID != nil && *item.UserID == userID {
 			urls = append(urls, item)
 		}
 	}
 
 	return urls, nil
+}
+
+func (r *InMemoryRepository) DeleteByUserIDAndHashes(_ context.Context, userID uuid.UUID, hashes []string) error {
+	hashSet := make(map[string]struct{}, len(hashes))
+	for _, h := range hashes {
+		hashSet[h] = struct{}{}
+	}
+
+	r.storage.Mu.RLock()
+	defer r.storage.Mu.RUnlock()
+
+	deletedAt := time.Now()
+	for _, u := range r.storage.Data {
+		if u.UserID != nil && *u.UserID == userID {
+			if _, ok := hashSet[u.Hash]; ok {
+				u.DeletedAt = &deletedAt
+			}
+		}
+	}
+
+	return nil
 }
