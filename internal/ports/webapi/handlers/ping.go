@@ -19,7 +19,7 @@ func (h *PingHandler) Routes() chi.Router {
 	r := chi.NewRouter()
 	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
 		if err := h.pinger.Ping(r.Context()); err != nil {
-			http.Error(w, "db not available", http.StatusInternalServerError)
+			http.Error(w, "not available", http.StatusServiceUnavailable)
 			return
 		}
 		w.WriteHeader(http.StatusOK)
