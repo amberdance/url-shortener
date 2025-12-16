@@ -33,6 +33,7 @@ type UserTestSuite struct {
 	repository *mocks.MockURLRepository
 	host       string
 	handler    *UserHandler
+	logger     *mocks.MockLogger
 }
 
 func TestUserTestSuite(t *testing.T) {
@@ -44,7 +45,8 @@ func (s *UserTestSuite) SetupTest() {
 	s.ctrl = gomock.NewController(s.T())
 	s.repository = mocks.NewMockURLRepository(s.ctrl)
 	s.host = "http://localhost:8080/"
-	s.handler = NewUserHandler(s.host, url.NewGetURLsByUserIDUseCase(s.repository), url.NewDeleteUserURLsBatchUseCase(s.repository, mocks.NewMockLogger(s.ctrl)))
+	s.logger = mocks.NewMockLogger(s.ctrl)
+	s.handler = NewUserHandler(s.host, url.NewGetURLsByUserIDUseCase(s.repository), url.NewDeleteUserURLsBatchAsyncUseCase(s.repository, s.logger))
 }
 
 func (s *UserTestSuite) TearDownSuite() {
@@ -134,13 +136,17 @@ func (s *UserTestSuite) Test_GetURLS_When_InvalidSignatureProvided_Then_401Retur
 	s.Equal(http.StatusUnauthorized, res.StatusCode)
 }
 
-func (s *UserTestSuite) Test_DeleteBatch_When_ValidRequest_Then_202Returned() {
+func (s *UserTestSuite) Test_DeleteBatchAsync_When_ValidRequest_Then_202Returned() {
 	var (
 		id, ctx  = generateUUIDWithContext(s.ctx)
 		recorder = httptest.NewRecorder()
 		hashes   = []string{"hash1", "hash2", "hash3", "hash4"}
 		body, _  = json.Marshal(hashes)
 	)
+
+	s.logger.EXPECT().
+		Debug(gomock.Any(), gomock.Any()).
+		AnyTimes()
 
 	s.repository.EXPECT().
 		DeleteByUserIDAndHashes(gomock.Any(), id, hashes).

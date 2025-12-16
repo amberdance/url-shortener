@@ -15,13 +15,13 @@ import (
 )
 
 type UserHandler struct {
-	baseURL                    string
-	getURLsByUserIDUseCase     usecase.GetURLsByUserIDUseCase
-	deleteUserURLsBatchUseCase usecase.DeleteUserURLsBatchUseCase
+	baseURL                         string
+	getURLsByUserIDUseCase          usecase.GetURLsByUserIDUseCase
+	deleteUserURLsBatchAsyncUseCase usecase.DeleteUserURLsBatchAsyncUseCase
 }
 
-func NewUserHandler(u string, uc1 usecase.GetURLsByUserIDUseCase, uc2 usecase.DeleteUserURLsBatchUseCase) *UserHandler {
-	return &UserHandler{baseURL: u, getURLsByUserIDUseCase: uc1, deleteUserURLsBatchUseCase: uc2}
+func NewUserHandler(u string, uc1 usecase.GetURLsByUserIDUseCase, uc2 usecase.DeleteUserURLsBatchAsyncUseCase) *UserHandler {
+	return &UserHandler{baseURL: u, getURLsByUserIDUseCase: uc1, deleteUserURLsBatchAsyncUseCase: uc2}
 }
 
 func (h *UserHandler) Routes() chi.Router {
@@ -91,7 +91,7 @@ func (h *UserHandler) deleteBatch(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.deleteUserURLsBatchUseCase.RunAsync(command.DeleteUserURLSCommand{
+	_ = h.deleteUserURLsBatchAsyncUseCase.Run(r.Context(), command.DeleteUserURLSCommand{
 		UserID: parsedUUID,
 		Hashes: hashes,
 	})

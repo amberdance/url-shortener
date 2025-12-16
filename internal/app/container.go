@@ -26,11 +26,12 @@ func buildContainer(r RepositoryProvider, cfg *config.Config, l contracts.Logger
 			URL usecase.URLUseCases
 		}{
 			URL: usecase.URLUseCases{
-				Create:              url.NewCreateUseCase(rep),
-				CreateBatch:         url.NewBatchCreateURLUseCase(rep),
-				GetByURL:            url.NewGetByHashUseCase(rep),
-				GetByUserID:         url.NewGetURLsByUserIDUseCase(rep),
-				DeleteByUserIDBatch: url.NewDeleteUserURLsBatchUseCase(rep, l),
+				Create:                   url.NewCreateUseCase(rep),
+				CreateBatch:              url.NewBatchCreateURLUseCase(rep),
+				GetByURL:                 url.NewGetByHashUseCase(rep),
+				GetByUserID:              url.NewGetURLsByUserIDUseCase(rep),
+				DeleteByUserIDBatch:      url.NewDeleteUserURLsBatchUseCase(rep, l),
+				DeleteByUserIDBatchAsync: url.NewDeleteUserURLsBatchAsyncUseCase(rep, l),
 			},
 		},
 	}

@@ -3,9 +3,10 @@ package usecase
 import "github.com/amberdance/url-shortener/internal/app/usecase/url"
 
 type URLUseCases struct {
-	GetByURL            url.GetByHashUseCase
-	Create              url.CreateUseCase
-	CreateBatch         url.BatchCreateURLUseCase
-	GetByUserID         url.GetURLsByUserIDUseCase
-	DeleteByUserIDBatch url.DeleteUserURLsBatchUseCase
+	GetByURL                 url.GetByHashUseCase
+	Create                   url.CreateUseCase
+	CreateBatch              url.BatchCreateURLUseCase
+	GetByUserID              url.GetURLsByUserIDUseCase
+	DeleteByUserIDBatch      url.DeleteUserURLsBatchUseCase
+	DeleteByUserIDBatchAsync url.DeleteUserURLsBatchAsyncUseCase
 }
